@@ -2,7 +2,7 @@
 title: Prompt Evaluator
 status: final
 created: 2026-09-04
-updated: 2026-09-04 (v2 — corrections issues de la revue qualité, assomption feedback confirmée)
+updated: 2026-09-04 (v3 — Timeline Considerations : repo/squelette créés, avancement du build reflété)
 ---
 
 # PRD — Prompt Evaluator
@@ -91,7 +91,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 ## Timeline Considerations
 
 - **Délai** : 3 jours à partir du 2026-09-04, le plus tôt possible.
-- **Contrainte technique de départ** : aucun backend, repo, ni clé API en place à ce jour — mise en place à faire en tout début de développement, ce qui réduit d'autant le temps disponible pour les fonctionnalités.
+- **Contrainte technique de départ** (mise à jour) : le repo GitHub (`Promptsimulator-commits/Prompt-evaluator`) et le squelette du projet (Next.js + Tailwind) sont créés et poussés. Restent à faire : le déploiement Vercel (en cours) et le backend (routes API `/api/execute`, `/api/score`, `/api/analyze`, à construire au fil des prochaines stories). La clé API Anthropic n'est pas encore disponible — le PM doit d'abord obtenir le budget de son responsable ; ceci bloque uniquement les fonctionnalités d'exécution (Story 1.3+), pas le squelette ni son déploiement.
 - **Développement** : vibecoding, PM + Claude Code (même approche que Prompt Trainer).
 - **Après la démo** : Si go, déployer la solution à l’ensemble des consultants
 
