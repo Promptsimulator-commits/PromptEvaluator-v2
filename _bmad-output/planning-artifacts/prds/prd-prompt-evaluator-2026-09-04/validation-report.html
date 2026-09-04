@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: Prompt Evaluator</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Prompt Evaluator — Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/prd.md</div>
+      </div>
+      <div class="grade grade-fair">Fair</div>
+    </header>
+
+    <div class="synthesis">
+      <p>PRD serré et honnêtement scopé, cohérent avec ses enjeux réels : POC de 3 jours, opérateur unique (le PM), porte de décision go/no-go. Les sections Non-Goals et Future Considerations font un vrai travail d'exclusion, la plupart des FR portent des formules explicites ou des sorties énumérées directement exploitables, et l'UJ unique (Julie) est porteur — il explique la boucle recommandée évaluation → analyse → réécriture → réévaluation plutôt que d'être décoratif.</p>
+      <p>Les principaux risques : une Success Metric (le feedback qualitatif des consultants) n'a aucun mécanisme de collecte décrit et entre en tension avec le Non-Goal explicite "démo sur le poste du PM, pas de multi-utilisateurs" ; le seuil de "critère instable" au cœur de la Fonctionnalité 2 n'est pas défini ; et addendum.md conserve une question ouverte obsolète alors que prd.md a déjà tranché la question (remplacement de Prompt Trainer). Aucun de ces points ne bloque un build en 3 jours, mais ce sont les points précis à resserrer avant ou pendant l'implémentation.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Decision-readiness</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Substance over theater</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Strategic coherence</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Done-ness clarity</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Scope honesty</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Downstream usability</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate (moins pertinent ici)</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>Decision-readiness</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>La décision centrale du PRD — démo au responsable, go/no-go pour un déploiement à 30 consultants — est sans ambiguïté, et les critères de jugement de la démo sont explicites. Les vrais arbitrages sont nommés plutôt que lissés : la tension Haiku vs "modèle réel" reste une véritable question ouverte différée à la V1, et le plafond budgétaire (~10-20€) est posé comme un Goal sans mécanisme d'application, ce qui est honnête vu les enjeux du POC.</p>
+            <p>Une tension réelle n'est nulle part surfacée comme décision ou question signalée : les Success Metrics s'engagent sur un "feedback qualitatif ... auprès des consultants ayant testé l'outil", mais les Non-Goals affirment "démo sur le poste du PM, pas de multi-utilisateurs" et la Timeline ne planifie qu'une démo au responsable. Rien ne décrit comment ou quand les consultants testeraient l'outil pendant ce POC de 3 jours.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Success metric sans mécanisme décrit</h3>
+              <span class="finding-location">§ Success Metrics, § Non-Goals</span>
+            </header>
+            <div class="finding-note">"Feedback qualitatif recueilli ... auprès des consultants ayant testé l'outil" présuppose que des consultants utilisent l'outil, mais § Non-Goals dit que le POC est mono-utilisateur sur le poste du PM, et § Timeline Considerations ne planifie qu'une démo au responsable — pas de phase de test consultants. Impossible de savoir si cette SM est dans le scope (et non opérationnalisée) ou un copier-coller d'un plan de phase ultérieure.</div>
+            <div class="finding-fix"><strong>Fix:</strong> soit ajouter une ligne décrivant comment/quand ce feedback est collecté (ex. informellement pendant la session de démo, sur le poste du PM), soit retirer cette SM du scope du pilote et la réserver au futur PRD de déploiement.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Substance over theater</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Pas de persona bloat (un seul UJ, utilisé partout, non décoratif), pas de section différenciation/innovation manufacturée pour faire complet, pas de boilerplate NFR ("must be scalable/secure") nulle part — il n'y a d'ailleurs pas de section NFR, ce qui est approprié plutôt qu'une lacune vu les enjeux. Le Problem Statement est ancré dans des spécificités ("skill tree IA du cabinet", "skill 'Prompting Produit' (niveau 2)") plutôt qu'un vision statement interchangeable.</div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Strategic coherence</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>La thèse est explicite et cohérente : la pratique informelle et l'e-learning théorique seul ne suffisent pas ; l'outil doit "faire pratiquer réellement le prompting, avec un retour objectif et pédagogique". Les deux fonctionnalités P0 découlent directement de cette thèse. Point faible : trois des quatre Success Metrics mesurent l'achèvement du processus (pas de bug, P0 livré, décision obtenue) plutôt que de valider la thèse pédagogique elle-même.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Les Success Metrics mesurent la livraison, pas la thèse</h3>
+              <span class="finding-location">§ Success Metrics</span>
+            </header>
+            <div class="finding-note">"L'ensemble des exigences P0 ... sont développées et fonctionnelles" et "La démo se déroule sans bug" confirment que le build a eu lieu, pas que l'outil a atteint son Goal d'aider à "identifier et comprendre ses erreurs de prompting".</div>
+            <div class="finding-fix"><strong>Fix:</strong> si possible en 3 jours, ajouter un signal qualitatif directement lié à la thèse (ex. une question spécifique dans la collecte de feedback sur si l'analyse a aidé à comprendre une erreur de prompting), même informellement.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Done-ness clarity</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>La plupart des FR sont inhabituellement précis pour un PRD de POC de 3 jours : FR3 précise le nombre exact d'appels et l'isolation de contexte, FR5/FR6 donnent des formules exactes, FR7 énumère les champs exacts affichés, FR9 donne la taxonomie exacte à 4 dimensions avec une échelle présente/claire/absente fixe. Aucun langage vague ("raisonnable", "user-friendly") dans le set P0.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">"Critères instables" non défini</h3>
+              <span class="finding-location">FR10, UJ-1 étape 3-4</span>
+            </header>
+            <div class="finding-note">FR10 dit que l'analyse "pointe les critères instables identifiés", et UJ-1 évoque la révélation de si "son prompt est stable ou non", mais aucun FR ne fixe le seuil (ex. validé 3/5 fois = instable ? strictement entre 1 et 4 sur 5 ?). C'est le signal le plus porteur pédagogiquement de la Fonctionnalité 2 ; le laisser indéfini risque un choix d'implémentation arbitraire.</div>
+            <div class="finding-fix"><strong>Fix:</strong> ajouter une ligne définissant "instable" (ex. "validé entre 1 et 4 fois sur 5, ni jamais ni toujours").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Pas de minimum sur le nombre de critères</h3>
+              <span class="finding-location">FR2, FR5</span>
+            </header>
+            <div class="finding-note">FR2 ne pose pas de borne minimale sur le nombre de critères saisis, et la formule de FR5 "(critères validés / total des critères) × 10" divise par ce nombre — une soumission à 0 critère est une division par zéro non gérée.</div>
+            <div class="finding-fix"><strong>Fix:</strong> ajouter "au moins 1 critère requis" à FR2, ou préciser le comportement de repli.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Scope honesty</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>La section Non-Goals est la plus solide du document sur cette dimension — six exclusions explicites et précises, chacune correspondant à une vraie décision de scope. Future Considerations sépare proprement chaque item différé avec une justification d'une ligne. Deux points font baisser la note : le trou de mécanisme de feedback consultants déjà signalé, et addendum.md — pointé directement par FR11 — qui se termine sur une question que prd.md a déjà tranchée.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Question ouverte obsolète dans addendum.md, contredit la décision tranchée dans prd.md</h3>
+              <span class="finding-location">addendum.md, "Point à clarifier avec l'utilisateur", lignes 24-26</span>
+            </header>
+            <div class="finding-note">addendum.md demande si "Prompt Evaluator remplace-t-il le mécanisme du Prompt Trainer ... ?" comme si non résolu, mais prd.md affirme déjà "Ce projet **remplace** l'approche précédente ('Prompt Trainer' ...)" (ligne 16), et le memlog confirme cette décision ("Relation avec Prompt Trainer: REMPLACEMENT").</div>
+            <div class="finding-fix"><strong>Fix:</strong> mettre à jour la conclusion d'addendum.md pour énoncer la résolution au lieu de la poser comme question ouverte, puisque FR11 y renvoie directement.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Downstream usability</h2>
+          <span class="verdict-pill verdict-adequate">adequate (moins pertinent ici)</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Ce PRD n'est pas "chain-top" au sens formel — le développement se fait en vibecoding direct (PM + Claude Code), pas via un pipeline PRD → UX → architecture → stories, donc la rigueur de traçabilité compte moins. Cela dit, la mécanique est propre là où ça compte : les IDs FR (FR1-FR11) sont contigus et uniques, l'UJ unique est bien nommé et porte le contexte inline, et le renvoi de FR11 vers addendum.md se résout correctement.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Dérive terminologique entre "note", "score" et "moyenne"</h3>
+              <span class="finding-location">FR6, FR7, UJ-1 étape 3</span>
+            </header>
+            <div class="finding-note">FR6 définit "la note finale du prompt = moyenne des 5 scores d'exécution", FR7 appelle le même concept "la moyenne globale", UJ-1 dit "la moyenne" — trois mots différents pour un même concept.</div>
+            <div class="finding-fix"><strong>Fix:</strong> un terme de Glossaire unique tightening la formulation (facultatif à ces enjeux).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Renvoi non ancré</h3>
+              <span class="finding-location">§ Nice-to-Have, ligne 68</span>
+            </header>
+            <div class="finding-note">"cohérent avec l'objectif 'intuitif et simple d'utilisation'" référence une formulation qui n'apparaît pas telle quelle (ni en substance) dans § Goals.</div>
+            <div class="finding-fix"><strong>Fix:</strong> cosmétique, item P1 — aligner la formulation ou la retirer si superflue.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Le PRD adopte à juste titre la forme "capability-spec" appropriée à un outil interne mono-opérateur plutôt que de sur-formaliser avec plusieurs personas ou une forte densité d'UJ. Les Success Metrics restent opérationnelles plutôt que forcées dans des métriques d'engagement utilisateur qui ne colleraient pas à un pilote de 3 jours. La relation brownfield avec le précédent projet "Prompt Trainer" est bien gérée : le Problem Statement énonce clairement la décision de remplacement, et addendum.md distingue précisément quels patterns de conception sont repris de ce qui ne l'est pas — c'est une vraie traçabilité brownfield, pas du remplissage.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>Conventions de balises (<code>[ASSUMPTION]</code>, <code>[NOTE FOR PM]</code>, <code>[NON-GOAL for MVP]</code>) totalement absentes — raisonnable pour un PRD solo à ces enjeux, mais aucune Assumptions Index à vérifier, et un lecteur cherchant ces balises pour repérer les tensions ouvertes n'en trouvera aucune, même là où elles existent (voir le trou de feedback consultants ci-dessus).</li>
+        <li>Terminologie : "note" (FR6) / "score" (FR5, FR7) / "moyenne" (UJ-1) désignent la même valeur calculée.</li>
+        <li>Continuité des IDs : FR1-FR11 contigus, sans trou ni doublon. UJ unique (UJ-1), protagoniste nommé (Julie), aucun UJ flottant. Pas d'ID de SM, non requis à cette échelle.</li>
+        <li>Cohérence inter-fichiers : FR11 → addendum.md se résout correctement pour le contenu d'architecture ; la question de clôture d'addendum.md est obsolète par rapport à prd.md.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-09-04T16:30:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

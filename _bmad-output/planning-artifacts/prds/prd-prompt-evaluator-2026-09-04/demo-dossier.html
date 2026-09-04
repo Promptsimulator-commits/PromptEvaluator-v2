@@ -1,0 +1,532 @@
+<title>Prompt Evaluator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F2F4EF;
+    --surface: #FFFFFF;
+    --surface-alt: #E6EAE1;
+    --ink: #1B2430;
+    --ink-muted: #57626C;
+    --accent: #B9720F;
+    --accent-ink: #241800;
+    --accent-soft: #F3E1C2;
+    --good: #1E7F6E;
+    --good-soft: #DCEEE9;
+    --bad: #A73A45;
+    --bad-soft: #F3DEE0;
+    --border: #D7DBCF;
+    --shadow: 0 1px 2px rgba(27,36,48,0.06), 0 8px 24px rgba(27,36,48,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11151A;
+      --surface: #171D23;
+      --surface-alt: #1E252B;
+      --ink: #E9EDE8;
+      --ink-muted: #A2ACA5;
+      --accent: #E3A63C;
+      --accent-ink: #1B1200;
+      --accent-soft: #3A2C10;
+      --good: #4FBFA6;
+      --good-soft: #163530;
+      --bad: #E2828C;
+      --bad-soft: #3A1E22;
+      --border: #2A323A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11151A;
+    --surface: #171D23;
+    --surface-alt: #1E252B;
+    --ink: #E9EDE8;
+    --ink-muted: #A2ACA5;
+    --accent: #E3A63C;
+    --accent-ink: #1B1200;
+    --accent-soft: #3A2C10;
+    --good: #4FBFA6;
+    --good-soft: #163530;
+    --bad: #E2828C;
+    --bad-soft: #3A1E22;
+    --border: #2A323A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  .sheet {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(36px, 6vw, 54px);
+    line-height: 1.05;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.15;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  p { margin: 0 0 12px; max-width: 65ch; color: var(--ink); }
+  .lede {
+    font-size: 19px;
+    color: var(--ink-muted);
+    max-width: 58ch;
+    margin: 0 0 28px;
+  }
+  .ask {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 0 0 8px;
+  }
+  .ask .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent);
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .ask p { margin: 0; color: var(--ink); font-size: 15px; }
+
+  header.cover {
+    padding-bottom: 40px;
+    margin-bottom: 44px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin: 0 0 56px; }
+  section > .eyebrow { margin-top: 0; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .card p:last-child { margin-bottom: 0; }
+  .card .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+
+  /* Journey strip */
+  .journey {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    counter-reset: step;
+  }
+  @media (max-width: 720px) { .journey { grid-template-columns: 1fr 1fr; } }
+  .step {
+    counter-increment: step;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    position: relative;
+  }
+  .step::before {
+    content: counter(step);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .step p { font-size: 14px; margin: 0; color: var(--ink-muted); }
+  .step strong { color: var(--ink); }
+
+  /* Example: evaluation result */
+  .example-frame {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .example-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--surface-alt);
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .example-body { padding: 20px 22px; }
+  .prompt-box {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13.5px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .crit-list { list-style: none; margin: 0 0 18px; padding: 0; font-size: 14px; }
+  .crit-list li { padding: 3px 0; color: var(--ink-muted); }
+  .crit-list li::before { content: "· "; color: var(--accent); }
+
+  table.scores {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  table.scores th, table.scores td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.scores th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+  .num-cell { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .avg-row td { font-weight: 600; border-top: 2px solid var(--ink); border-bottom: none; }
+
+  .stability-bar {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .stability-bar span {
+    width: 8px; height: 14px; border-radius: 1px;
+    background: var(--border);
+  }
+  .stability-bar span.on { background: var(--good); }
+  .stability-bar span.off { background: var(--bad-soft); }
+
+  .dims {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } }
+  .dim {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    background: var(--surface);
+  }
+  .dim-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .dim-name { font-weight: 600; font-size: 14.5px; }
+  .status-pill {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .status-absent { background: var(--bad-soft); color: var(--bad); }
+  .status-present { background: var(--accent-soft); color: var(--accent-ink); }
+  .status-clair { background: var(--good-soft); color: var(--good); }
+  .dim p { font-size: 13.5px; color: var(--ink-muted); margin: 0; }
+
+  /* Architecture */
+  pre.mermaid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin: 0 0 18px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    color: var(--ink);
+  }
+
+  /* Framing grid */
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  @media (max-width: 640px) { .facts { grid-template-columns: 1fr 1fr; } }
+  .fact {
+    background: var(--surface);
+    padding: 16px 18px;
+  }
+  .fact .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+  }
+  .fact .value { font-size: 15px; font-weight: 500; }
+
+  ul.plain { margin: 0; padding-left: 18px; }
+  ul.plain li { margin-bottom: 6px; color: var(--ink); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="cover">
+    <p class="eyebrow">Dossier de démo · POC 3 jours · Skill "Prompting Produit"</p>
+    <h1>Prompt Evaluator</h1>
+    <p class="lede">Un outil de pratique du prompting pour les consultants du cabinet : ils apportent un prompt réel, l'app le teste objectivement et explique comment le rendre plus fiable.</p>
+    <div class="ask">
+      <span class="tag">La décision</span>
+      <p>Ce dossier soutient une démo de 3 jours — objectif : obtenir un go/no-go pour le déploiement aux 30 consultants du cabinet.</p>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">Le problème</p>
+    <h2>Savoir prompter s'apprend en pratiquant, pas en lisant</h2>
+    <p>Les consultants doivent monter en compétence sur le prompting — une skill du parcours IA du cabinet. L'apprentissage informel actuel ne donne aucun retour structuré ; un module e-learning seul explique, mais ne fait pas pratiquer. Il manque un outil qui fasse écrire, tester et corriger de vrais prompts.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Comment ça marche</p>
+    <h2>Deux gestes, une boucle d'entraînement</h2>
+    <div class="two-col" style="margin-top:20px;">
+      <div class="card">
+        <p class="num">Fonctionnalité 1</p>
+        <h3>Évaluer par la preuve</h3>
+        <p>Le consultant écrit un prompt et ses critères d'acceptance. L'app l'exécute 5 fois, note chaque résultat sur ces critères, et calcule une moyenne — en révélant si le prompt est fiable ou seulement chanceux une fois sur cinq.</p>
+      </div>
+      <div class="card">
+        <p class="num">Fonctionnalité 2</p>
+        <h3>Comprendre pour progresser</h3>
+        <p>À tout moment, l'app analyse le prompt sur 4 dimensions du métier — persona, objectif, contraintes, exemples — et indique précisément ce qui manque, avec un exemple concret d'amélioration.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Exemple concret</p>
+    <h2>Ce que voit le consultant</h2>
+    <p style="margin-bottom:20px;">Illustration avec un prompt type — pas une donnée réelle de démo, un exemple pour montrer le format.</p>
+
+    <div class="example-frame" style="margin-bottom:16px;">
+      <div class="example-label">Prompt testé</div>
+      <div class="example-body">
+        <div class="prompt-box">« Rédige un email pour annoncer notre nouvelle fonctionnalité aux clients. »</div>
+        <ul class="crit-list">
+          <li>Le destinataire (clients existants) est mentionné</li>
+          <li>Le ton est professionnel et accessible</li>
+          <li>La longueur est de 3 à 5 lignes</li>
+        </ul>
+
+        <table class="scores">
+          <thead><tr><th>Exécution</th><th>Score /10</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="num-cell">7,5</td></tr>
+            <tr><td>2</td><td class="num-cell">10,0</td></tr>
+            <tr><td>3</td><td class="num-cell">5,0</td></tr>
+            <tr><td>4</td><td class="num-cell">7,5</td></tr>
+            <tr><td>5</td><td class="num-cell">10,0</td></tr>
+            <tr class="avg-row"><td>Moyenne</td><td class="num-cell">8,0</td></tr>
+          </tbody>
+        </table>
+
+        <table class="scores" style="margin-bottom:0;">
+          <thead><tr><th>Critère</th><th>Stabilité</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Destinataire mentionné</td>
+              <td><span class="num-cell">3/5</span><span class="stability-bar">
+                <span class="on"></span><span class="on"></span><span class="on"></span><span class="off"></span><span class="off"></span>
+              </span></td>
+            </tr>
+            <tr>
+              <td>Ton professionnel</td>
+              <td><span class="num-cell">5/5</span><span class="stability-bar">
+                <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span>
+              </span></td>
+            </tr>
+            <tr>
+              <td>Longueur 3–5 lignes</td>
+              <td><span class="num-cell">4/5</span><span class="stability-bar">
+                <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="off"></span>
+              </span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size:13px; color:var(--ink-muted); margin:0;">Même un prompt bien écrit ne garantit pas un résultat identique à chaque fois — l'IA ne suit pas ses propres instructions avec une fiabilité de 100 %. C'est cette fiabilité réelle, run après run, que les 5 exécutions mesurent.</p>
+      </div>
+    </div>
+
+    <div class="example-frame">
+      <div class="example-label">Analyse — même prompt</div>
+      <div class="example-body">
+        <div class="dims">
+          <div class="dim">
+            <div class="dim-head"><span class="dim-name">Persona</span><span class="status-pill status-absent">Absent</span></div>
+            <p>Aucun rôle n'est donné à l'IA. Ex. : « Tu es chargé de communication client ».</p>
+          </div>
+          <div class="dim">
+            <div class="dim-head"><span class="dim-name">Objectif</span><span class="status-pill status-clair">Clair</span></div>
+            <p>Annoncer une nouvelle fonctionnalité aux clients — sans ambiguïté.</p>
+          </div>
+          <div class="dim">
+            <div class="dim-head"><span class="dim-name">Contraintes</span><span class="status-pill status-absent">Absent</span></div>
+            <p>Ton et longueur comptent parmi vos critères mais ne sont pas demandés dans le prompt — les rendre explicites réduit le risque que l'IA les traite au hasard.</p>
+          </div>
+          <div class="dim">
+            <div class="dim-head"><span class="dim-name">Exemples</span><span class="status-pill status-absent">Absent</span></div>
+            <p>Aucun exemple de bon email fourni pour cadrer le style attendu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Parcours</p>
+    <h2>Julie, PM au cabinet</h2>
+    <div class="journey">
+      <div class="step"><p><strong>Colle son prompt</strong> et ses critères d'acceptance — texte libre, comme dans son travail réel.</p></div>
+      <div class="step"><p><strong>Lance l'évaluation</strong> — 5 exécutions, score moyen, stabilité par critère.</p></div>
+      <div class="step"><p><strong>Demande l'analyse</strong> — 4 dimensions, ce qui manque et pourquoi.</p></div>
+      <div class="step"><p><strong>Réécrit et relance</strong> — vérifie objectivement le progrès.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Architecture</p>
+    <h2>Simple, sécurisé, vérifiable en 3 jours</h2>
+    <pre class="mermaid">
+graph LR
+  A["Navigateur — Next.js App Router"] -->|JSON| B["/api/execute"]
+  A -->|JSON| C["/api/score"]
+  A -->|JSON| D["/api/analyze"]
+  B --> E[("Claude Haiku — API Anthropic")]
+  C --> E
+  D --> E
+    </pre>
+    <p style="margin-bottom:12px;">La clé API n'est jamais exposée au navigateur : chaque appel au LLM passe par une route serveur. Aucune exécution ne réutilise le contexte d'une autre — les 5 mesures sont indépendantes.</p>
+    <div class="chips">
+      <span class="chip">Next.js 16.3</span>
+      <span class="chip">Tailwind CSS 4.3.3</span>
+      <span class="chip">@anthropic-ai/sdk 0.123.0</span>
+      <span class="chip">Claude Haiku</span>
+      <span class="chip">Vercel</span>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Cadrage du POC</p>
+    <h2>Ce que ce pilote couvre — et ce qu'il exclut sciemment</h2>
+    <div class="facts" style="margin-bottom:18px;">
+      <div class="fact"><div class="label">Délai</div><div class="value">3 jours</div></div>
+      <div class="fact"><div class="label">Exécutions</div><div class="value">N = 5, fixe</div></div>
+      <div class="fact"><div class="label">Budget API</div><div class="value">~10–20 €</div></div>
+      <div class="fact"><div class="label">Fournisseur</div><div class="value">Anthropic seul</div></div>
+      <div class="fact"><div class="label">Comptes</div><div class="value">Aucun — URL publique, sans login</div></div>
+      <div class="fact"><div class="label">Persistance</div><div class="value">Aucune</div></div>
+    </div>
+    <p style="margin-bottom:6px;">Exclu volontairement de ce pilote — pas oublié, différé :</p>
+    <ul class="plain">
+      <li>Connexion et multi-utilisateurs — nécessaire seulement si le déploiement aux 30 consultants est validé</li>
+      <li>Module e-learning théorique — chantier séparé, dans une autre application</li>
+      <li>Nombre d'exécutions configurable, choix du modèle, autres fournisseurs LLM</li>
+    </ul>
+  </section>
+
+  <section style="margin-bottom:0;">
+    <p class="eyebrow">Ce qui décide du succès</p>
+    <h2>Trois critères, une décision</h2>
+    <ul class="plain" style="margin-bottom:24px;">
+      <li>La démo se déroule sans bug devant vous.</li>
+      <li>L'ensemble des fonctionnalités prévues dans ce dossier sont réellement construites.</li>
+      <li>Le retour des consultants qui l'ont testé est recueilli.</li>
+    </ul>
+    <div class="ask">
+      <span class="tag">Prochaine étape</span>
+      <p>Décision go / no-go pour ouvrir Prompt Evaluator à l'ensemble des 30 consultants du cabinet.</p>
+    </div>
+  </section>
+
+  <footer>
+    Prompt Evaluator — dossier de démo, préparé le 4 septembre 2026 · Sources : PRD et spine d'architecture du POC.
+  </footer>
+
+</div>
