@@ -19,3 +19,17 @@
   summary: Criteria textarea placeholder shows only one example line; a second example line would make the "one criterion per line" convention less ambiguous for first-time users.
   evidence: Minor copy polish, not a functional gap.
   status: RESOLVED (2026-09-04) — second example line added as part of the visual identity redesign of app/page.js.
+
+## Deferred from: code review of story 1.4 (2026-09-08)
+
+- source_spec: `_bmad-output/planning-artifacts/epics.md` (Story 1.4)
+  summary: The `/api/score` guard that rejects a verdict list whose length differs from the criteria count is unreachable by this project's verification method.
+  evidence: The project verifies failure paths by intercepting `window.fetch` in the browser (TESTING.md). That intercept sits between the browser and the route, so it cannot make the Anthropic SDK *inside* the route return a malformed tool_use block. Exercising this branch requires stubbing the SDK, which requires a test runner — explicitly ruled out for the 3-day POC (TESTING.md line 3). Revisit at V1. Meanwhile the client-side equality check added by this review is the independent second guard.
+
+- source_spec: `_bmad-output/planning-artifacts/epics.md` (Stories 1.3, 1.4)
+  summary: No spec artifact was produced for Stories 1.3 and 1.4, unlike 1.1 and 1.2.
+  evidence: `implementation-artifacts/` holds `spec-1-1-*.md` and `spec-1-2-*.md` only, yet 1.3 and 1.4 are the two most technically substantial stories in the epic. Their acceptance criteria live only in `epics.md` and their verification record only in the memlog. Not blocking — the work is done and verified — but the epic's paper trail is uneven.
+
+- source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prompt-evaluator-2026-09-04/ARCHITECTURE-SPINE.md`
+  summary: The Structural Seed and AD rules still name TypeScript files (`app/api/score/route.ts`, `app/page.tsx`) while the project is plain JavaScript.
+  evidence: Pre-existing deviation established in Story 1.1 and applied consistently since — not a Story 1.4 regression. Worth one correction pass over the spine rather than being re-flagged on every future story.

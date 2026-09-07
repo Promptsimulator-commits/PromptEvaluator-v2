@@ -58,7 +58,7 @@ graph LR
 
 - **Binds:** FR3, FR3b, FR4–FR7
 - **Prevents:** le client moyenne un score sur moins de N exécutions sans le signaler, ou une logique d'orchestration serveur apparaît en doublon de la boucle client
-- **Rule:** la boucle des N exécutions (`/api/execute` puis `/api/score`, répété N fois) est orchestrée côté client (`app/page.tsx`), pas par une route serveur agrégatrice. N est choisi par l'utilisateur (1 à 10, défaut 5) et **figé au lancement** : les routes API restent sans état et ignorent N, chacune ne traitant qu'une exécution. Si un seul appel échoue (timeout, erreur API) à n'importe quelle étape, l'évaluation entière est abandonnée et l'erreur affichée — jamais de moyenne calculée sur un sous-ensemble des N résultats.
+- **Rule:** la boucle des N exécutions est orchestrée côté client (`app/page.tsx`), pas par une route serveur agrégatrice, en **deux phases successives** : les N appels à `/api/execute`, puis les N appels à `/api/score` (et non un entrelacement exécution→notation répété N fois — le *Given* de la Story 1.4 exige que les N exécutions soient toutes produites avant la notation). Conséquence assumée : un échec de notation survient après que les N exécutions ont déjà été payées. N est choisi par l'utilisateur (1 à 10, défaut 5) et **figé au lancement** : les routes API restent sans état et ignorent N, chacune ne traitant qu'une exécution. Si un seul appel échoue (timeout, erreur API) à n'importe quelle étape, l'évaluation entière est abandonnée et l'erreur affichée — jamais de moyenne calculée sur un sous-ensemble des N résultats.
 
 ### AD-5 — Pas de persistance, état 100% client
 

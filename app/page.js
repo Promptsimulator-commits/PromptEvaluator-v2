@@ -38,12 +38,18 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
 
+  // Les doublons sont retirés : deux lignes identiques compteraient deux fois
+  // dans la note (FR5) et se télescoperaient dans le regroupement par critère
+  // de la Story 1.5. On conserve l'ordre de première apparition.
   const criteriaList = useMemo(
-    () =>
-      criteria
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0),
+    () => [
+      ...new Set(
+        criteria
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+      ),
+    ],
     [criteria]
   );
 
@@ -79,7 +85,7 @@ export default function Home() {
     for (let i = 0; i < total; i++) {
       const { ok, data } = await callApi("/api/execute", { prompt });
 
-      if (!ok || typeof data?.output !== "string") {
+      if (!ok || typeof data?.output !== "string" || data.output.trim() === "") {
         abandon(
           `Exécution ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}.`
         );
@@ -99,7 +105,10 @@ export default function Home() {
 
       const results = data?.results;
 
-      if (!ok || !Array.isArray(results) || results.length === 0) {
+      // Le dénominateur du score est le nombre de critères saisis (FR5), pas
+      // le nombre de verdicts reçus : on refuse une réponse dont la taille ne
+      // correspond pas, plutôt que d'afficher une note plausible mais fausse.
+      if (!ok || !Array.isArray(results) || results.length !== criteriaList.length) {
         abandon(
           `Notation ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}.`
         );
@@ -111,7 +120,7 @@ export default function Home() {
       collected[i] = {
         ...collected[i],
         results,
-        score: (passedCount / results.length) * 10,
+        score: (passedCount / criteriaList.length) * 10,
       };
       setRuns([...collected]);
     }
@@ -146,9 +155,10 @@ export default function Home() {
               id="prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              disabled={isRunning}
               rows={8}
               placeholder="Saisissez le prompt que vous souhaitez tester…"
-              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -168,11 +178,12 @@ export default function Home() {
               id="criteria"
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
+              disabled={isRunning}
               rows={8}
               placeholder={
                 "Un critère par ligne…\nex : La réponse doit être en français\nex : La réponse fait moins de 5 lignes"
               }
-              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -220,7 +231,10 @@ export default function Home() {
               {isRunning ? "Évaluation en cours…" : "Évaluer"}
             </button>
             {isRunning && (
-              <span className="font-mono text-xs text-foreground/60">
+              <span
+                aria-live="polite"
+                className="font-mono text-xs text-foreground/60"
+              >
                 {runs.length < totalRuns
                   ? `exécution ${runs.length + 1} / ${totalRuns}`
                   : `notation ${Math.min(scoredCount + 1, totalRuns)} / ${totalRuns}`}

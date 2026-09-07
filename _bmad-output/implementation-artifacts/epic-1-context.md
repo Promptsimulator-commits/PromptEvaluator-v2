@@ -4,27 +4,29 @@
 
 ## Goal
 
-This epic delivers the core evaluation loop of the Prompt Evaluator POC: a user enters a prompt and a set of free-text acceptance criteria, triggers 5 independent executions of that prompt, has each execution scored against the criteria, and sees a reliable final score (average + per-execution detail + per-criterion stability). It also covers standing up the project itself (repo, Next.js scaffold, Vercel deployment) as its first story. This epic matters because it is the entire evidence base the demo depends on: a working, bug-free, end-to-end evaluation flow is the primary success criterion for the go/no-go decision from the sponsor. Getting the measurement itself right (true independence between runs, no partial/misleading averages) is what makes the resulting score trustworthy.
+This epic delivers the core evaluation loop of the Prompt Evaluator POC: a user enters a prompt and a set of free-text acceptance criteria, chooses how many times to run it (N, a 1-10 slider defaulting to 5 — FR3b), triggers N independent executions of that prompt, has each execution scored against the criteria, and sees a reliable final score (average + per-execution detail + per-criterion stability). It also covers standing up the project itself (repo, Next.js scaffold, Vercel deployment) as its first story. This epic matters because it is the entire evidence base the demo depends on: a working, bug-free, end-to-end evaluation flow is the primary success criterion for the go/no-go decision from the sponsor. Getting the measurement itself right (true independence between runs, no partial/misleading averages) is what makes the resulting score trustworthy.
 
-**Current status:** Story 1.1 is done — the repo exists at github.com/Promptsimulator-commits/Prompt-evaluator and the app is deployed at https://prompt-evaluator-pi.vercel.app/. The Anthropic API key is not yet configured (pending budget approval from the sponsor). This blocks Story 1.3 (execution) but not Story 1.2 (prompt/criteria input UI), which can proceed independently.
+**Current status (2026-09-08):** Stories 1.1 to 1.4 are done. The repo is at github.com/swoodpartners/PromptEvaluator (migrated from an initial personal repo) and the app is deployed at https://prompt-evaluator-pi.vercel.app/. The Anthropic API key is provisioned — locally in `.env.local` and as a Vercel environment variable — so nothing is blocked. Deployment is manual via the Vercel CLI: a `git push` does **not** redeploy the site, because the GitHub org connection is unresolved. Story 1.5 is next.
 
 ## Stories
 
 - Story 1.1: Initialize and deploy the project (repo, Next.js scaffold, Vercel) — DONE
-- Story 1.2: Enter a prompt and its acceptance criteria
-- Story 1.3: Execute the prompt 5 times securely
-- Story 1.4: Score each result against the criteria
-- Story 1.5: View the average score and per-criterion stability
+- Story 1.2: Enter a prompt and its acceptance criteria — DONE
+- Story 1.3: Execute the prompt N times securely (`/api/execute`) — DONE
+- Story 1.4: Score each result against the criteria (`/api/score`) — DONE
+- Story 1.5: View the average score and per-criterion stability — NEXT
 
 ## Requirements & Constraints
 
-- A prompt (free text) and acceptance criteria (free text, one per line) are the only inputs; at least 1 non-empty criterion is required before an evaluation can be launched, and blank lines are ignored when counting criteria.
-- The prompt runs 5 times against the Anthropic API (Claude Haiku), each run in a completely fresh, independent context — no shared conversation history between runs.
-- Each of the 5 outputs is scored by a separate API call (also a fresh context) that judges every criterion as passed/not-passed with an explanation.
-- Per-execution score = (criteria passed / total criteria) × 10. Final score = average of the 5 execution scores.
-- The user must see: the overall average, each of the 5 individual execution scores, and, per criterion, how many times (out of 5) it was validated.
+- A prompt (free text) and acceptance criteria (free text, one per line) are the only inputs; at least 1 non-empty criterion is required before an evaluation can be launched, blank lines are ignored, and duplicate criteria are de-duplicated (first occurrence wins) so one criterion cannot weigh twice in the score.
+- N (the number of executions) is chosen by the user on a 1-10 slider, default 5 (FR3b), and is frozen at launch — moving the slider mid-run does not change the evaluation in progress.
+- The prompt runs N times against the Anthropic API (Claude Haiku), each run in a completely fresh, independent context — no shared conversation history between runs.
+- Each of the N outputs is scored by a separate API call (also a fresh context) that judges every criterion as passed/not-passed with an explanation.
+- Per-execution score = (criteria passed / total criteria) × 10. Final score = average of the N execution scores.
+- The user must see: the overall average, each of the N individual execution scores, and, per criterion, how many times (out of N) it was validated.
 - Measurement integrity is a hard constraint: if any single execution or scoring call fails, the entire evaluation is discarded and a clear error is shown — never compute or present an average over a partial set of results.
-- The Anthropic API key must never be exposed to the client; all LLM calls happen only from server-side code. The key is not yet available in the environment (pending budget approval), so Story 1.3 onward cannot be exercised end-to-end until it is provisioned.
+- The Anthropic API key must never be exposed to the client; all LLM calls happen only from server-side code. The key is provisioned both locally and on Vercel, so the flow can be exercised end to end.
+- Cost scales as 2N Anthropic calls per evaluation (N executions + N scorings) — 20 calls at N = 10. Worth keeping in view against the ~€10-20 envelope as Epic 2 adds `/api/analyze`.
 - Budget/reliability targets (cross-cutting, not owned by this epic specifically): keep total API spend in the ~€10-20 range for the whole POC, and the app must run without bugs during the sponsor demo.
 - No login/auth, no database, no persistence between sessions — out of scope for this POC.
 - No formal UX spec exists; the only steer is that the interface should feel simple and playful (P1, nice-to-have), with no fixed visual identity required.
@@ -38,13 +40,14 @@ This epic delivers the core evaluation loop of the Prompt Evaluator POC: a user 
   - `POST /api/score`: `{ output: string, criteria: string[] }` → `{ results: { criterion: string, passed: boolean, explanation: string }[] }`
   - Uniform error shape on every route: `{ error: string }` + HTTP 500 — never a route-specific error format.
 - Each call to `/api/execute` and `/api/score` sends a single message to the Anthropic API with no attached conversation history — one call, one fresh context, no server-side conversational state retained between calls.
-- The 5-run loop (execute → score, repeated 5 times) is orchestrated client-side in `app/page.tsx`, not by an aggregating server route. On any single failure at any step, abandon the whole evaluation and surface the error — never average a subset.
+- The N-run loop is orchestrated client-side in `app/page.js` (the project is plain JavaScript, not TypeScript — the architecture spine's `.ts`/`.tsx` filenames are stale), not by an aggregating server route. It runs as two successive phases: all N executions, then all N scorings. On any single failure at any step, abandon the whole evaluation and surface the error — never average a subset.
+- Shared server-side Anthropic concerns (model id, token ceiling, error mapping, `{ error }` + 500 shape) live in `lib/anthropic.js`; the routes import them rather than each keeping a copy.
 - All application state (prompt, criteria, execution results, scores) lives only in React state (`useState`/`useReducer`) in client components. No disk writes, no browser storage, no database.
 - Naming: API routes are kebab-case under `app/api/<verb>/route.ts` (`execute`, `score`); React components are PascalCase. One Anthropic call per route — no hidden fan-out.
 - Single deployment environment (Vercel, no staging); `ANTHROPIC_API_KEY` is set as a Vercel env var and in local `.env.local` (git-ignored, never committed) — this key is currently missing pending budget approval.
 
 ## Cross-Story Dependencies
 
-- Story 1.1 is complete; it no longer blocks work, but Story 1.3 (and anything downstream of it) is blocked until the `ANTHROPIC_API_KEY` is provisioned. Story 1.2 can proceed now regardless.
-- Story 1.3 (5 executions) depends on Story 1.2 (prompt + criteria input) for its inputs, and must complete before Story 1.4 (scoring) can run, which in turn must complete before Story 1.5 (average + stability display) has data to show.
-- Epic 2 (prompt analysis) is independent of this epic's UI flow but, when evaluation results already exist from this epic, Epic 2 consumes them (per-criterion pass/fail data) to surface "unstable" criteria (validated 1-4 times out of 5) — so the data shape produced by Story 1.4/1.5 must remain stable for Epic 2 to build on.
+- Stories 1.1 to 1.4 are complete and nothing is blocked; the `ANTHROPIC_API_KEY` is provisioned.
+- Story 1.5 (average + stability display) is the last of this epic. Its data is already produced by Story 1.4: each run carries `results: [{criterion, passed, explanation}]` plus a `score`, with `criterion` guaranteed to be the exact string the user typed (the route re-associates verdicts by position and never echoes the model's paraphrase) — that exact-label guarantee is what makes per-criterion grouping across runs possible.
+- Epic 2 (prompt analysis) is independent of this epic's UI flow but, when evaluation results already exist from this epic, Epic 2 consumes them (per-criterion pass/fail data) to surface "unstable" criteria — **validated between 1 and N−1 times out of N** (FR10), not the old fixed "1-4 out of 5". At N = 1 no criterion can be unstable. The data shape produced by Story 1.4/1.5 must remain stable for Epic 2 to build on.

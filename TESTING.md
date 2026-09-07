@@ -86,3 +86,53 @@ Scénario: Panne réseau plutôt qu'erreur API
 ```
 
 Cette liste sert de gabarit : chaque nouvelle story reprend cette structure (chemin heureux, bornes, échec en cours de route, panne réseau, sécurité) et l'adapte à son propre comportement.
+
+## Story 1.4 (noter chaque résultat selon les critères)
+
+```gherkin
+Scénario: Notation nominale
+  Given 2 exécutions terminées et 2 critères, dont un vrai et un faux
+  When la phase de notation s'exécute
+  Then chaque exécution affiche ses 2 critères validés/non validés avec explication
+  And le score affiché est 5 / 10 = (1 validé / 2 critères) × 10
+
+Scénario: Bornes de la formule de score
+  Given des critères tous vrais, puis des critères tous faux
+  Then les scores affichés sont 10 / 10 puis 0 / 10
+
+Scénario: Score fractionnaire
+  Given 1 critère validé sur 3
+  Then le score s'affiche « 3,3 / 10 » (virgule décimale française, 1 décimale)
+
+Scénario: Critères en double
+  Given deux lignes de critère strictement identiques
+  When je lance l'évaluation
+  Then le critère n'est compté qu'une fois dans le total et n'apparaît qu'une fois
+
+Scénario: Échec d'une notation en cours de route
+  Given plusieurs exécutions réussies et une notation simulée en échec
+  Then toute l'évaluation est abandonnée, y compris les scores déjà obtenus
+  And le bouton, le curseur et les deux zones de saisie redeviennent actifs
+
+Scénario: Panne réseau (fetch qui lève), phase d'exécution
+  Given un appel à /api/execute qui lève une exception
+  Then l'évaluation est abandonnée avec un message d'exécution
+
+Scénario: Panne réseau (fetch qui lève), phase de notation
+  Given un appel à /api/score qui lève une exception
+  Then l'évaluation est abandonnée avec un message de notation
+
+Scénario: Réponse de notation de la mauvaise taille
+  Given /api/score qui renvoie moins de verdicts qu'il n'y a de critères
+  Then le client abandonne au lieu de calculer un score sur le mauvais dénominateur
+
+Scénario: Garde-fous de la route
+  Given un appel direct à /api/score sans critère, puis avec un résultat vide
+  Then la route répond { error } + HTTP 500 dans les deux cas
+
+Scénario: Champs gelés pendant l'évaluation
+  Then le prompt, les critères et le curseur sont désactivés tant qu'une évaluation tourne
+
+Scénario: Sécurité
+  Then aucun appel vers api.anthropic.com depuis le navigateur, uniquement /api/execute et /api/score
+```
