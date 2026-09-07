@@ -152,7 +152,18 @@ Scénario: Stabilité par critère
 
 Scénario: N = 1
   Given le curseur réglé sur 1
-  Then la stabilité s'affiche "1 / 1", sans laisser croire à une mesure de stabilité fiable
+  Then la stabilité s'affiche "1 / 1", accompagnée d'un avertissement explicite dans le résumé
+    (pas seulement sous le curseur, qui suit la valeur en direct et non celle mesurée)
+
+Scénario: Extrêmes de la barre de stabilité
+  Given un critère jamais validé, puis un critère toujours validé
+  Then les ratios affichés sont "0 / N" (barre vide) et "N / N" (barre pleine)
+
+Scénario: Deuxième évaluation à la suite
+  Given une évaluation terminée avec les critères A et B
+  When je remplace les critères par C et D puis relance
+  Then le résumé précédent (A, B) disparaît dès le lancement de la nouvelle évaluation
+  And une fois terminée, le nouveau résumé porte sur C et D, jamais sur A et B
 
 Scénario: Résumé absent pendant l'évaluation
   Given une évaluation en cours (exécution ou notation)

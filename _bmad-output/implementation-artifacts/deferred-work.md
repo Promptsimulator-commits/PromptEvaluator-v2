@@ -26,9 +26,9 @@
   summary: The `/api/score` guard that rejects a verdict list whose length differs from the criteria count is unreachable by this project's verification method.
   evidence: The project verifies failure paths by intercepting `window.fetch` in the browser (TESTING.md). That intercept sits between the browser and the route, so it cannot make the Anthropic SDK *inside* the route return a malformed tool_use block. Exercising this branch requires stubbing the SDK, which requires a test runner — explicitly ruled out for the 3-day POC (TESTING.md line 3). Revisit at V1. Meanwhile the client-side equality check added by this review is the independent second guard.
 
-- source_spec: `_bmad-output/planning-artifacts/epics.md` (Stories 1.3, 1.4)
-  summary: No spec artifact was produced for Stories 1.3 and 1.4, unlike 1.1 and 1.2.
-  evidence: `implementation-artifacts/` holds `spec-1-1-*.md` and `spec-1-2-*.md` only, yet 1.3 and 1.4 are the two most technically substantial stories in the epic. Their acceptance criteria live only in `epics.md` and their verification record only in the memlog. Not blocking — the work is done and verified — but the epic's paper trail is uneven.
+- source_spec: `_bmad-output/planning-artifacts/epics.md` (Stories 1.3, 1.4, 1.5)
+  summary: No spec artifact was produced for Stories 1.3, 1.4, or 1.5, unlike 1.1 and 1.2.
+  evidence: `implementation-artifacts/` holds `spec-1-1-*.md` and `spec-1-2-*.md` only, yet 1.3-1.5 are the technically substantial stories that close epic 1. Their acceptance criteria live only in `epics.md` and their verification record only in the memlog. Not blocking — the work is done and verified — but the epic's paper trail is uneven.
 
 - source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prompt-evaluator-2026-09-04/ARCHITECTURE-SPINE.md`
   summary: The Structural Seed and AD rules still name TypeScript files (`app/api/score/route.ts`, `app/page.tsx`) while the project is plain JavaScript.

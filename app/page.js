@@ -141,19 +141,24 @@ export default function Home() {
   }
 
   // Moyenne des N scores (FR6) — n'a de sens qu'une fois l'évaluation complète.
+  // Diviser par totalRuns (figé), pas runs.length : la garantie que les deux
+  // coïncident ne doit pas reposer implicitement sur la logique de isComplete
+  // (même classe de défaut que le dénominateur du score, corrigé en Story 1.4).
   const averageScore = isComplete
-    ? runs.reduce((sum, run) => sum + run.score, 0) / runs.length
+    ? runs.reduce((sum, run) => sum + run.score, 0) / totalRuns
     : null;
 
   // Pour chaque critère, combien de fois sur N il a été validé (FR7). On
   // s'appuie sur la position plutôt que sur le texte : la route renvoie
   // toujours le libellé exact saisi par l'utilisateur, dans l'ordre des
   // critères envoyés, donc l'index est une clé fiable pour regrouper à
-  // travers les N exécutions.
+  // travers les N exécutions. `?.` par précaution : sans effet aujourd'hui
+  // (isComplete garantit des résultats complets), mais évite qu'une future
+  // dérive fasse planter le rendu plutôt que d'afficher un résultat dégradé.
   const criterionStability = isComplete
     ? evaluatedCriteria.map((criterion, index) => ({
         criterion,
-        passedCount: runs.filter((run) => run.results[index].passed).length,
+        passedCount: runs.filter((run) => run.results[index]?.passed).length,
       }))
     : [];
 
@@ -282,7 +287,14 @@ export default function Home() {
         )}
 
         {isComplete && (
-          <section className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+          <section
+            aria-labelledby="summary-heading"
+            role="status"
+            className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
+          >
+            <h2 id="summary-heading" className="sr-only">
+              Synthèse de l&apos;évaluation
+            </h2>
             <div className="flex flex-col items-center gap-1 text-center">
               <span className="text-xs font-semibold tracking-widest text-primary uppercase">
                 Note finale
@@ -300,16 +312,24 @@ export default function Home() {
               <h3 className="text-sm font-medium text-foreground">
                 Stabilité par critère
               </h3>
+              {totalRuns === 1 && (
+                <p className="text-xs text-foreground/60">
+                  Une seule exécution : ce ratio ne mesure pas encore la stabilité de votre prompt.
+                </p>
+              )}
               <ul className="flex flex-col gap-2">
-                {criterionStability.map(({ criterion, passedCount }) => (
-                  <li key={criterion} className="flex flex-col gap-1">
+                {criterionStability.map(({ criterion, passedCount }, index) => (
+                  <li key={index} className="flex flex-col gap-1">
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <span className="text-foreground">{criterion}</span>
                       <span className="shrink-0 font-mono text-xs font-medium text-accent">
                         {passedCount} / {totalRuns}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                    <div
+                      aria-hidden="true"
+                      className="h-1.5 w-full overflow-hidden rounded-full bg-border"
+                    >
                       <div
                         className="h-full rounded-full bg-accent"
                         style={{ width: `${(passedCount / totalRuns) * 100}%` }}
