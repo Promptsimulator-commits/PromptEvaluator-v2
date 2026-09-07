@@ -136,3 +136,33 @@ Scénario: Champs gelés pendant l'évaluation
 Scénario: Sécurité
   Then aucun appel vers api.anthropic.com depuis le navigateur, uniquement /api/execute et /api/score
 ```
+
+## Story 1.5 (voir le score moyen et la stabilité par critère)
+
+Pas de nouvelle route API : uniquement de l'affichage à partir des données déjà produites par la Story 1.4.
+
+```gherkin
+Scénario: Moyenne nominale
+  Given 3 exécutions notées à 10, 5 et 0 sur 10
+  Then la note finale affichée est 5 / 10
+
+Scénario: Stabilité par critère
+  Given un critère qui varie d'une exécution à l'autre (ex. "chiffre pair" sur un tirage aléatoire)
+  Then le résumé affiche le bon ratio (ex. 0/3) et reste cohérent avec le détail par exécution
+
+Scénario: N = 1
+  Given le curseur réglé sur 1
+  Then la stabilité s'affiche "1 / 1", sans laisser croire à une mesure de stabilité fiable
+
+Scénario: Résumé absent pendant l'évaluation
+  Given une évaluation en cours (exécution ou notation)
+  Then ni la note finale ni la stabilité ne s'affichent
+
+Scénario: Résumé absent après un abandon
+  Given une notation simulée en échec en cours de séquence
+  Then aucun résumé ne s'affiche, cohérent avec l'absence de résultats
+
+Scénario: Le résumé reste figé si les critères sont modifiés après coup
+  Given une évaluation terminée, puis l'utilisateur retape le champ critères sans relancer
+  Then le résumé continue d'afficher le critère réellement mesuré, pas le texte en cours de saisie
+```

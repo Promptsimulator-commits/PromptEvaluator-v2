@@ -34,8 +34,16 @@ export default function Home() {
   // Nombre d'exécutions figé au lancement de l'évaluation en cours : distinct de
   // runCount, que l'utilisateur peut rebouger après coup sans fausser l'affichage.
   const [totalRuns, setTotalRuns] = useState(DEFAULT_RUNS);
+  // Liste des critères figée au lancement, pour la même raison : si l'utilisateur
+  // retape le champ critères après une évaluation terminée, le résumé affiché
+  // continue de correspondre à ce qui a été réellement mesuré.
+  const [evaluatedCriteria, setEvaluatedCriteria] = useState([]);
   const [runs, setRuns] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
+  // Distinct de "les résultats existent" : passe à true seulement quand les N
+  // exécutions ET les N notations ont réussi, jamais après un abandon — le
+  // résumé (moyenne, stabilité) ne doit s'afficher que sur une mesure complète.
+  const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState(null);
 
   // Les doublons sont retirés : deux lignes identiques compteraient deux fois
@@ -63,13 +71,16 @@ export default function Home() {
   // n'est conservé à l'écran.
   async function handleEvaluate() {
     setIsRunning(true);
+    setIsComplete(false);
     setError(null);
     setRuns([]);
 
-    // Figé au lancement : déplacer le curseur pendant une évaluation ne doit
-    // pas changer le nombre d'exécutions en cours de route.
+    // Figés au lancement : déplacer le curseur ou retaper les critères pendant
+    // une évaluation ne doit rien changer à l'évaluation en cours ni à son résumé.
     const total = runCount;
     setTotalRuns(total);
+    const criteriaSnapshot = criteriaList;
+    setEvaluatedCriteria(criteriaSnapshot);
 
     const abandon = (message) => {
       setRuns([]);
@@ -100,7 +111,7 @@ export default function Home() {
     for (let i = 0; i < total; i++) {
       const { ok, data } = await callApi("/api/score", {
         output: collected[i].output,
-        criteria: criteriaList,
+        criteria: criteriaSnapshot,
       });
 
       const results = data?.results;
@@ -108,7 +119,7 @@ export default function Home() {
       // Le dénominateur du score est le nombre de critères saisis (FR5), pas
       // le nombre de verdicts reçus : on refuse une réponse dont la taille ne
       // correspond pas, plutôt que d'afficher une note plausible mais fausse.
-      if (!ok || !Array.isArray(results) || results.length !== criteriaList.length) {
+      if (!ok || !Array.isArray(results) || results.length !== criteriaSnapshot.length) {
         abandon(
           `Notation ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}.`
         );
@@ -120,13 +131,31 @@ export default function Home() {
       collected[i] = {
         ...collected[i],
         results,
-        score: (passedCount / criteriaList.length) * 10,
+        score: (passedCount / criteriaSnapshot.length) * 10,
       };
       setRuns([...collected]);
     }
 
     setIsRunning(false);
+    setIsComplete(true);
   }
+
+  // Moyenne des N scores (FR6) — n'a de sens qu'une fois l'évaluation complète.
+  const averageScore = isComplete
+    ? runs.reduce((sum, run) => sum + run.score, 0) / runs.length
+    : null;
+
+  // Pour chaque critère, combien de fois sur N il a été validé (FR7). On
+  // s'appuie sur la position plutôt que sur le texte : la route renvoie
+  // toujours le libellé exact saisi par l'utilisateur, dans l'ordre des
+  // critères envoyés, donc l'index est une clé fiable pour regrouper à
+  // travers les N exécutions.
+  const criterionStability = isComplete
+    ? evaluatedCriteria.map((criterion, index) => ({
+        criterion,
+        passedCount: runs.filter((run) => run.results[index].passed).length,
+      }))
+    : [];
 
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
@@ -250,6 +279,47 @@ export default function Home() {
           >
             {error}
           </div>
+        )}
+
+        {isComplete && (
+          <section className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col items-center gap-1 text-center">
+              <span className="text-xs font-semibold tracking-widest text-primary uppercase">
+                Note finale
+              </span>
+              <span className="font-display text-5xl font-semibold text-foreground">
+                {formatScore(averageScore)}
+                <span className="text-2xl text-foreground/40"> / 10</span>
+              </span>
+              <span className="text-xs text-foreground/60">
+                Moyenne sur {totalRuns} exécution{totalRuns !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              <h3 className="text-sm font-medium text-foreground">
+                Stabilité par critère
+              </h3>
+              <ul className="flex flex-col gap-2">
+                {criterionStability.map(({ criterion, passedCount }) => (
+                  <li key={criterion} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-foreground">{criterion}</span>
+                      <span className="shrink-0 font-mono text-xs font-medium text-accent">
+                        {passedCount} / {totalRuns}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                      <div
+                        className="h-full rounded-full bg-accent"
+                        style={{ width: `${(passedCount / totalRuns) * 100}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
         )}
 
         {runs.length > 0 && (
