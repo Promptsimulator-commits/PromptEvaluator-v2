@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Office lock files (e.g. epics.md opened in Word)
 ~$*
+
+.vercel
+.env*
