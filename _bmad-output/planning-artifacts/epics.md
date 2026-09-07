@@ -15,14 +15,15 @@ This document provides the complete epic and story breakdown for Prompt Evaluato
 
 FR1: L'utilisateur saisit un prompt (texte libre).
 FR2: L'utilisateur saisit des critères d'acceptance (un par ligne, texte libre) — au moins 1 critère non vide est requis pour lancer une évaluation.
-FR3: Le prompt est exécuté 5 fois via l'API Anthropic (Claude Haiku), chaque exécution dans un contexte neuf indépendant.
+FR3: Le prompt est exécuté N fois via l'API Anthropic (Claude Haiku), chaque exécution dans un contexte neuf indépendant.
+FR3b: L'utilisateur choisit N avant de lancer l'évaluation, via un curseur allant de 1 à 10 exécutions (défaut : 5). N est figé au lancement.
 FR4: Chaque résultat d'exécution est noté par un appel API séparé (contexte neuf), qui évalue chaque critère comme validé ou non, avec une explication.
 FR5: Le score d'une exécution = (critères validés / total des critères) × 10.
-FR6: La note finale du prompt = moyenne des 5 scores d'exécution.
-FR7: L'utilisateur voit : la moyenne globale, le score de chacune des 5 exécutions, et pour chaque critère le nombre de fois où il a été validé sur 5.
+FR6: La note finale du prompt = moyenne des N scores d'exécution.
+FR7: L'utilisateur voit : la moyenne globale, le score de chacune des N exécutions, et pour chaque critère le nombre de fois où il a été validé sur N.
 FR8: L'utilisateur peut demander une analyse de son prompt à tout moment (avant ou après une évaluation), via un appel API séparé (contexte neuf).
 FR9: L'analyse évalue le prompt sur 4 dimensions : persona, objectif, contraintes, exemples — chacune qualifiée présente / claire / absente, avec une explication et un exemple concret d'amélioration.
-FR10: Quand des résultats d'évaluation (Fonctionnalité 1) existent pour ce prompt, l'analyse les intègre et pointe les critères instables identifiés — un critère est dit **instable** s'il a été validé entre 1 et 4 fois sur 5.
+FR10: Quand des résultats d'évaluation (Fonctionnalité 1) existent pour ce prompt, l'analyse les intègre et pointe les critères instables identifiés — un critère est dit **instable** s'il a été validé entre 1 et N−1 fois sur N. À N = 1, aucun critère ne peut être qualifié d'instable.
 FR11: Les appels à l'API Anthropic passent par une fonction serverless (route API Next.js) — la clé API n'est jamais exposée côté client.
 
 ### NonFunctional Requirements
@@ -30,7 +31,7 @@ FR11: Les appels à l'API Anthropic passent par une fonction serverless (route A
 NFR1 (Sécurité) : La clé API Anthropic n'est jamais exposée côté client — lue uniquement via `process.env` dans les routes API serveur (voir Architecture Spine AD-1).
 NFR2 (Coût) : Le budget d'appels API reste dans une fourchette indicative de ~10-20€ pour l'ensemble du POC.
 NFR3 (Fiabilité) : L'application fonctionne sans bug lors de la démo au responsable — critère de succès du PRD.
-NFR4 (Intégrité de la mesure) : Les 5 exécutions et leurs notations sont indépendantes (aucun contexte de conversation partagé entre appels) ; un échec sur une seule exécution/notation invalide l'ensemble de l'évaluation plutôt que de produire une moyenne partielle (voir Architecture Spine AD-3, AD-4).
+NFR4 (Intégrité de la mesure) : Les N exécutions et leurs notations sont indépendantes (aucun contexte de conversation partagé entre appels) ; un échec sur une seule exécution/notation invalide l'ensemble de l'évaluation plutôt que de produire une moyenne partielle (voir Architecture Spine AD-3, AD-4).
 
 ### Additional Requirements
 
@@ -42,7 +43,7 @@ NFR4 (Intégrité de la mesure) : Les 5 exécutions et leurs notations sont ind�
   - `POST /api/score` : `{ output, criteria[] }` → `{ results: [{criterion, passed, explanation}] }`
   - `POST /api/analyze` : `{ prompt, runResults? }` → `{ dimensions: [{name, status, explanation, example}] }`
   - Erreurs uniformes sur les 3 routes : `{ error }` + HTTP 500.
-- **Orchestration client** : la boucle des 5 exécutions est pilotée côté client (`app/page.tsx`), pas par une route serveur agrégatrice (Architecture Spine AD-4).
+- **Orchestration client** : la boucle des N exécutions est pilotée côté client (`app/page.tsx`), pas par une route serveur agrégatrice (Architecture Spine AD-4). N est choisi par l'utilisateur (curseur 1-10, défaut 5) et figé au lancement ; les routes API ignorent N et ne traitent qu'une exécution chacune.
 - **État applicatif** : React state local uniquement (`useState`), aucune persistance, aucun `localStorage`, aucune base de données (Architecture Spine AD-5, non-goal PRD).
 - **Stack fixée** : Next.js 16.3, Node.js ≥ 20.9, Tailwind CSS 4.3.3, `@anthropic-ai/sdk` 0.123.0, modèle Claude Haiku, hébergement Vercel.
 
@@ -54,10 +55,11 @@ Aucun document UX formel pour ce POC (délai de 3 jours) — non applicable. Le 
 
 FR1: Epic 1 - Saisie du prompt à tester
 FR2: Epic 1 - Saisie des critères d'acceptance
-FR3: Epic 1 - 5 exécutions indépendantes via l'API Anthropic
+FR3: Epic 1 - N exécutions indépendantes via l'API Anthropic
+FR3b: Epic 1 - Curseur de choix du nombre d'exécutions (1 à 10)
 FR4: Epic 1 - Notation de chaque exécution par IA
 FR5: Epic 1 - Score par exécution
-FR6: Epic 1 - Note finale (moyenne des 5 scores)
+FR6: Epic 1 - Note finale (moyenne des N scores)
 FR7: Epic 1 - Affichage détaillé (moyenne, scores, stabilité par critère)
 FR8: Epic 2 - Demande d'analyse à tout moment
 FR9: Epic 2 - Analyse sur 4 dimensions (persona/objectif/contraintes/exemples)
@@ -70,7 +72,7 @@ NFR2 (budget), NFR3 (fiabilité démo): transverses, suivis pendant le build, no
 ## Epic List
 
 ### Epic 1: Évaluer un prompt par exécutions multiples
-L'utilisateur peut saisir un prompt et ses critères d'acceptance, lancer 5 exécutions notées, et voir un score fiable (moyenne + détail par exécution + stabilité par critère). Inclut la mise en place du projet (repo GitHub, Next.js, déploiement Vercel) comme première story.
+L'utilisateur peut saisir un prompt et ses critères d'acceptance, lancer N exécutions notées (N réglable de 1 à 10), et voir un score fiable (moyenne + détail par exécution + stabilité par critère). Inclut la mise en place du projet (repo GitHub, Next.js, déploiement Vercel) comme première story.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR11
 
 ### Epic 2: Analyser un prompt et recevoir des suggestions
@@ -79,7 +81,7 @@ L'utilisateur peut, à tout moment, demander une analyse de son prompt sur les 4
 
 ## Epic 1: Évaluer un prompt par exécutions multiples
 
-L'utilisateur peut saisir un prompt et ses critères d'acceptance, lancer 5 exécutions notées, et voir un score fiable (moyenne + détail par exécution + stabilité par critère).
+L'utilisateur peut saisir un prompt et ses critères d'acceptance, lancer N exécutions notées (N réglable de 1 à 10), et voir un score fiable (moyenne + détail par exécution + stabilité par critère).
 
 ### Story 1.1: Initialiser et déployer le projet
 
@@ -106,19 +108,20 @@ So that je peux préparer un test avant de le lancer.
 **When** je saisis un texte dans le champ prompt et un ou plusieurs critères (un par ligne) dans le champ critères
 **Then** les deux champs conservent mon texte tel quel (FR1, FR2), et un bouton "Évaluer" devient actif seulement quand le prompt est non vide et qu'au moins 1 ligne de critère non vide est présente (les lignes vides sont ignorées lors du comptage)
 
-### Story 1.3: Exécuter le prompt 5 fois de façon sécurisée
+### Story 1.3: Exécuter le prompt N fois de façon sécurisée
 
 As a consultant,
-I want voir mon prompt exécuté 5 fois par l'IA,
-So that je peux observer si les résultats varient d'une fois à l'autre.
+I want choisir combien de fois mon prompt est exécuté par l'IA, et voir ces exécutions,
+So that je peux observer si les résultats varient d'une fois à l'autre, en ajustant l'effort au besoin.
 
 **Acceptance Criteria:**
 
-**Given** j'ai saisi un prompt et cliqué sur "Évaluer"
-**When** l'application appelle `/api/execute` 5 fois, chaque appel dans un contexte neuf indépendant (FR3)
-**Then** les 5 résultats bruts s'affichent à l'écran au fur et à mesure
+**Given** j'ai saisi un prompt, réglé le curseur d'exécutions (1 à 10, défaut 5) et cliqué sur "Évaluer"
+**When** l'application appelle `/api/execute` N fois, chaque appel dans un contexte neuf indépendant (FR3, FR3b)
+**Then** les N résultats bruts s'affichent à l'écran au fur et à mesure
+**And** le curseur est désactivé pendant l'évaluation, et la valeur de N utilisée reste celle du lancement
 **And** l'appel à l'API Anthropic se fait exclusivement côté serveur, la clé n'est jamais visible dans le réseau ou le code client (FR11)
-**And** si un seul des 5 appels échoue, l'évaluation entière est abandonnée et une erreur claire est affichée — aucun résultat partiel n'est présenté comme final
+**And** si un seul des N appels échoue, l'évaluation entière est abandonnée et une erreur claire est affichée — aucun résultat partiel n'est présenté comme final
 
 ### Story 1.4: Noter chaque résultat selon les critères
 
@@ -128,8 +131,8 @@ So that je sache lesquels sont remplis ou non, et pourquoi.
 
 **Acceptance Criteria:**
 
-**Given** les 5 exécutions ont produit un résultat chacune
-**When** l'application appelle `/api/score` pour chacun des 5 résultats (contexte neuf, FR4)
+**Given** les N exécutions ont produit un résultat chacune
+**When** l'application appelle `/api/score` pour chacun des N résultats (contexte neuf, FR4)
 **Then** pour chaque résultat, chaque critère est marqué validé/non validé avec une explication
 **And** le score de ce résultat = (critères validés / total des critères) × 10 (FR5)
 
@@ -141,11 +144,11 @@ So that je comprenne si mon prompt est globalement bon et où il est instable.
 
 **Acceptance Criteria:**
 
-**Given** les 5 exécutions sont notées
+**Given** les N exécutions sont notées
 **When** les résultats sont affichés
-**Then** la note finale = moyenne des 5 scores est affichée (FR6)
-**And** le score de chacune des 5 exécutions est visible individuellement
-**And** pour chaque critère, le nombre de fois où il a été validé sur 5 est affiché (FR7)
+**Then** la note finale = moyenne des N scores est affichée (FR6)
+**And** le score de chacune des N exécutions est visible individuellement
+**And** pour chaque critère, le nombre de fois où il a été validé sur N est affiché (FR7)
 
 ## Epic 2: Analyser un prompt et recevoir des suggestions
 
@@ -175,5 +178,5 @@ So that les suggestions soient reliées à ce que j'ai réellement observé, pas
 **Given** une évaluation (Epic 1) a déjà été lancée pour ce prompt
 **When** je demande une analyse
 **Then** les résultats d'évaluation (scores par critère, stabilité) sont transmis à `/api/analyze` (FR10)
-**And** l'analyse mentionne explicitement les critères instables identifiés (validés entre 1 et 4 fois sur 5), en cohérence avec les résultats affichés en Epic 1
+**And** l'analyse mentionne explicitement les critères instables identifiés (validés entre 1 et N−1 fois sur N), en cohérence avec les résultats affichés en Epic 1
 **And** si aucune évaluation n'a encore été lancée, l'analyse fonctionne quand même (Story 2.1), sans ce complément

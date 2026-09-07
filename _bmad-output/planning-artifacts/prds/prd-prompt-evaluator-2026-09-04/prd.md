@@ -20,7 +20,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 - Démontrer, via une démo fonctionnelle sans bug, que l'ensemble des spécifications de ce PRD ont été développées.
 - Obtenir une décision go/no-go du responsable pour un déploiement aux 30 consultants du cabinet.
 - Faire en sorte que l'outil aide réellement à **identifier et comprendre ses erreurs de prompting**, pas seulement à obtenir un prompt réécrit — l'apprentissage prime sur la simple correction.
-- Rester dans un budget d'appels API négligeable pour ce POC (~10-20€).
+- Rester dans un budget d'appels API négligeable pour ce POC (~10-20€). Depuis que N est réglable jusqu'à 10 (FR3b), une évaluation peut coûter jusqu'à deux fois le coût initialement prévu à N = 5 : le plafond reste tenable pour un POC démontré sur un poste, mais se consomme d'autant plus vite que N est élevé.
 
 ## Non-Goals
 
@@ -37,7 +37,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 
 1. Julie arrive sur l'outil et colle un prompt qu'elle utilise réellement (ex. pour rédiger une synthèse d'entretiens).
 2. Elle écrit ses critères d'acceptance (un par ligne, en langage libre) : ce qu'un bon résultat devrait respecter.
-3. Elle lance l'évaluation : le prompt est exécuté 5 fois, chaque résultat noté selon ses critères. Elle voit le score de chaque exécution, la moyenne, et pour chaque critère combien de fois il a été validé sur 5 — ce qui révèle si son prompt est stable ou non.
+3. Elle choisit le nombre d'exécutions (curseur de 1 à 10, 5 par défaut) et lance l'évaluation : le prompt est exécuté N fois, chaque résultat noté selon ses critères. Elle voit le score de chaque exécution, la moyenne, et pour chaque critère combien de fois il a été validé sur N — ce qui révèle si son prompt est stable ou non.
 4. Elle demande l'analyse du prompt (disponible à tout moment, avant ou après l'évaluation) : le prompt est évalué sur 4 dimensions (persona, objectif, contraintes, exemples), chacune notée présente/claire/absente avec explication et exemple concret d'amélioration. Si des résultats d'évaluation existent déjà, l'analyse pointe aussi les critères instables.
 5. Julie réécrit son prompt à partir de ces pistes, et relance l'évaluation pour vérifier objectivement le progrès.
 6. Le parcours recommandé est évaluation → analyse → réécriture → réévaluation (boucle de pratique délibérée), mais les deux fonctionnalités restent accessibles indépendamment et à tout moment — Julie peut choisir de commencer par l'analyse si elle préfère.
@@ -49,16 +49,17 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 **Fonctionnalité 1 — Évaluation par exécutions multiples**
 - FR1 : L'utilisateur saisit un prompt (texte libre).
 - FR2 : L'utilisateur saisit des critères d'acceptance (un par ligne, texte libre) — au moins 1 critère non vide est requis pour lancer une évaluation.
-- FR3 : Le prompt est exécuté 5 fois via l'API Anthropic (Claude Haiku), chaque exécution dans un contexte neuf indépendant.
+- FR3 : Le prompt est exécuté N fois via l'API Anthropic (Claude Haiku), chaque exécution dans un contexte neuf indépendant.
+- FR3b : L'utilisateur choisit N avant de lancer l'évaluation, via un curseur allant de 1 à 10 exécutions (valeur par défaut : 5). N est figé au lancement et ne change pas pendant l'évaluation en cours.
 - FR4 : Chaque résultat d'exécution est noté par un appel API séparé (contexte neuf), qui évalue chaque critère comme validé ou non, avec une explication.
 - FR5 : Le score d'une exécution = (critères validés / total des critères) × 10.
-- FR6 : La note finale du prompt = moyenne des 5 scores d'exécution.
-- FR7 : L'utilisateur voit : la moyenne globale, le score de chacune des 5 exécutions, et pour chaque critère le nombre de fois où il a été validé sur 5.
+- FR6 : La note finale du prompt = moyenne des N scores d'exécution.
+- FR7 : L'utilisateur voit : la moyenne globale, le score de chacune des N exécutions, et pour chaque critère le nombre de fois où il a été validé sur N.
 
 **Fonctionnalité 2 — Analyse et suggestions d'amélioration**
 - FR8 : L'utilisateur peut demander une analyse de son prompt à tout moment (avant ou après une évaluation), via un appel API séparé (contexte neuf).
 - FR9 : L'analyse évalue le prompt sur 4 dimensions : persona, objectif, contraintes, exemples — chacune qualifiée présente / claire / absente, avec une explication et un exemple concret d'amélioration.
-- FR10 : Quand des résultats d'évaluation (Fonctionnalité 1) existent pour ce prompt, l'analyse les intègre et pointe les critères instables identifiés — un critère est dit **instable** s'il a été validé entre 1 et 4 fois sur 5 (ni jamais, ni systématiquement).
+- FR10 : Quand des résultats d'évaluation (Fonctionnalité 1) existent pour ce prompt, l'analyse les intègre et pointe les critères instables identifiés — un critère est dit **instable** s'il a été validé entre 1 et N−1 fois sur N (ni jamais, ni systématiquement). À N = 1, aucun critère ne peut être qualifié d'instable : l'analyse porte alors sur la seule structure du prompt.
 
 **Technique**
 - FR11 : Les appels à l'API Anthropic passent par une fonction serverless — la clé API n'est jamais exposée côté client (voir `addendum.md` pour le pattern d'architecture repris de Prompt Trainer).
@@ -70,7 +71,6 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 ### Future Considerations (P2)
 
 - Déploiement multi-utilisateurs (connexion, 30 consultants) — futur PRD.
-- Nombre d'exécutions (N) configurable.
 - Support multi-fournisseurs LLM.
 - Persistance / historique des évaluations entre sessions.
 - Choix du modèle "réel" utilisé par les consultants au quotidien (ex. Sonnet plutôt que Haiku) pour refléter fidèlement leurs conditions d'usage.
@@ -91,7 +91,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 ## Timeline Considerations
 
 - **Délai** : 3 jours à partir du 2026-09-04, le plus tôt possible.
-- **Contrainte technique de départ** (mise à jour) : le repo GitHub (`swoodpartners/PromptEvaluator`, migré depuis un repo personnel initial) et le squelette du projet (Next.js + Tailwind) sont créés et poussés. Déploiement actuellement sur Vercel (fonctionnel, sert la démo) ; **migration prévue vers un VPS OVH** (contrainte cabinet sur les données + volonté de garder la main sur l'infra) — VPS pas encore commandé (achat en attente), migration à faire une fois provisionné. Reste à construire : le backend (routes API `/api/execute`, `/api/score`, `/api/analyze`, au fil des prochaines stories). La clé API Anthropic n'est pas encore disponible — le PM doit d'abord obtenir le budget de son responsable ; ceci bloque uniquement les fonctionnalités d'exécution (Story 1.3+), pas le squelette ni son déploiement.
+- **Contrainte technique de départ** (mise à jour) : le repo GitHub (`swoodpartners/PromptEvaluator`, migré depuis un repo personnel initial) et le squelette du projet (Next.js + Tailwind) sont créés et poussés. Déploiement actuellement sur Vercel (fonctionnel, sert la démo) ; **migration prévue vers un VPS OVH** (contrainte cabinet sur les données + volonté de garder la main sur l'infra) — VPS pas encore commandé (achat en attente), migration à faire une fois provisionné. La clé API Anthropic est obtenue et configurée (en local via `.env.local`, en production en variable d'environnement Vercel). La route `/api/execute` est construite et déployée (Story 1.3). Reste à construire : `/api/score` et `/api/analyze` (Stories 1.4, 1.5, 2.1, 2.2). Le déploiement se fait manuellement via le CLI Vercel — la connexion automatique au repo de l'org GitHub n'est pas résolue, un `git push` ne redéploie donc pas le site.
 - **Développement** : vibecoding, PM + Claude Code (même approche que Prompt Trainer).
 - **Après la démo** : Si go, déployer la solution à l’ensemble des consultants
 

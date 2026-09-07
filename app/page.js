@@ -2,11 +2,17 @@
 
 import { useState, useMemo } from "react";
 
-const RUN_COUNT = 5;
+const MIN_RUNS = 1;
+const MAX_RUNS = 10;
+const DEFAULT_RUNS = 5;
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [criteria, setCriteria] = useState("");
+  const [runCount, setRunCount] = useState(DEFAULT_RUNS);
+  // Nombre d'exécutions figé au lancement de l'évaluation en cours : distinct de
+  // runCount, que l'utilisateur peut rebouger après coup sans fausser l'affichage.
+  const [totalRuns, setTotalRuns] = useState(DEFAULT_RUNS);
   const [runs, setRuns] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
@@ -18,7 +24,7 @@ export default function Home() {
 
   const canEvaluate = prompt.trim().length > 0 && criteriaCount > 0 && !isRunning;
 
-  // Orchestration côté client (AD-4) : les 5 exécutions s'enchaînent une par une
+  // Orchestration côté client (AD-4) : les exécutions s'enchaînent une par une
   // pour que les résultats s'affichent au fur et à mesure. Si un seul appel
   // échoue, toute l'évaluation est abandonnée — aucun résultat partiel n'est
   // conservé à l'écran.
@@ -28,8 +34,12 @@ export default function Home() {
     setRuns([]);
 
     const collected = [];
+    // Figé au lancement : déplacer le curseur pendant une évaluation ne doit
+    // pas changer le nombre d'exécutions en cours de route.
+    const total = runCount;
+    setTotalRuns(total);
 
-    for (let i = 0; i < RUN_COUNT; i++) {
+    for (let i = 0; i < total; i++) {
       let response;
 
       try {
@@ -41,7 +51,7 @@ export default function Home() {
       } catch {
         setRuns([]);
         setError(
-          `Exécution ${i + 1}/${RUN_COUNT} : impossible de joindre le serveur. Évaluation abandonnée.`
+          `Exécution ${i + 1}/${total} : impossible de joindre le serveur. Évaluation abandonnée.`
         );
         setIsRunning(false);
         return;
@@ -52,7 +62,7 @@ export default function Home() {
       if (!response.ok || !data?.output) {
         setRuns([]);
         setError(
-          `Exécution ${i + 1}/${RUN_COUNT} : ${data?.error ?? "erreur inattendue"}. Évaluation abandonnée, aucun résultat partiel n'est retenu.`
+          `Exécution ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}. Évaluation abandonnée, aucun résultat partiel n'est retenu.`
         );
         setIsRunning(false);
         return;
@@ -122,6 +132,40 @@ export default function Home() {
             />
           </div>
 
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="runCount"
+                className="text-sm font-medium text-foreground"
+              >
+                Nombre d&apos;exécutions
+              </label>
+              <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                {runCount} exécution{runCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <input
+              id="runCount"
+              type="range"
+              min={MIN_RUNS}
+              max={MAX_RUNS}
+              step={1}
+              value={runCount}
+              disabled={isRunning}
+              onChange={(e) => setRunCount(Number(e.target.value))}
+              className="w-full accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+            />
+            <div className="flex justify-between font-mono text-xs text-foreground/40">
+              <span>{MIN_RUNS}</span>
+              <span>{MAX_RUNS}</span>
+            </div>
+            <p className="text-xs text-foreground/60">
+              {runCount === 1
+                ? "Une seule exécution : vous verrez un résultat, mais pas la stabilité du prompt."
+                : `Le prompt sera exécuté ${runCount} fois pour révéler les variations d'une exécution à l'autre.`}
+            </p>
+          </div>
+
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -133,7 +177,7 @@ export default function Home() {
             </button>
             {isRunning && (
               <span className="font-mono text-xs text-foreground/60">
-                exécution {Math.min(runs.length + 1, RUN_COUNT)} / {RUN_COUNT}
+                exécution {Math.min(runs.length + 1, totalRuns)} / {totalRuns}
               </span>
             )}
           </div>
@@ -155,7 +199,7 @@ export default function Home() {
                 Résultats bruts
               </h2>
               <span className="font-mono text-xs text-foreground/60">
-                {runs.length} / {RUN_COUNT}
+                {runs.length} / {totalRuns}
               </span>
             </div>
 

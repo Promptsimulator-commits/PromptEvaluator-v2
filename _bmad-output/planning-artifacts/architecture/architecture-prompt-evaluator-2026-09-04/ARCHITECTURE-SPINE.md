@@ -54,11 +54,11 @@ graph LR
 - **Prevents:** une route réutilise involontairement l'historique d'un appel précédent, biaisant la mesure des N exécutions indépendantes
 - **Rule:** chaque appel à `/api/execute` et `/api/score` envoie un unique message à l'API Anthropic sans historique de conversation joint — un appel = un contexte neuf, aucun état conversationnel conservé côté serveur entre deux appels.
 
-### AD-4 — Orchestration des 5 exécutions côté client, échec = abandon complet
+### AD-4 — Orchestration des N exécutions côté client, échec = abandon complet
 
-- **Binds:** FR3–FR7
-- **Prevents:** le client moyenne un score sur moins de 5 exécutions sans le signaler, ou une logique d'orchestration serveur apparaît en doublon de la boucle client
-- **Rule:** la boucle des 5 exécutions (`/api/execute` puis `/api/score`, répété 5 fois) est orchestrée côté client (`app/page.tsx`), pas par une route serveur agrégatrice. Si un seul appel échoue (timeout, erreur API) à n'importe quelle étape, l'évaluation entière est abandonnée et l'erreur affichée — jamais de moyenne calculée sur un sous-ensemble des 5 résultats.
+- **Binds:** FR3, FR3b, FR4–FR7
+- **Prevents:** le client moyenne un score sur moins de N exécutions sans le signaler, ou une logique d'orchestration serveur apparaît en doublon de la boucle client
+- **Rule:** la boucle des N exécutions (`/api/execute` puis `/api/score`, répété N fois) est orchestrée côté client (`app/page.tsx`), pas par une route serveur agrégatrice. N est choisi par l'utilisateur (1 à 10, défaut 5) et **figé au lancement** : les routes API restent sans état et ignorent N, chacune ne traitant qu'une exécution. Si un seul appel échoue (timeout, erreur API) à n'importe quelle étape, l'évaluation entière est abandonnée et l'erreur affichée — jamais de moyenne calculée sur un sous-ensemble des N résultats.
 
 ### AD-5 — Pas de persistance, état 100% client
 
@@ -110,7 +110,7 @@ Un seul environnement : Vercel (build depuis le repo GitHub à créer en tout d�
 | Capability / Area | Lives in | Governed by |
 | --- | --- | --- |
 | FR1–FR2 (saisie prompt + critères) | `app/page.tsx` | AD-5 |
-| FR3 (5 exécutions) | `app/api/execute/route.ts` + `app/page.tsx` | AD-1, AD-2, AD-3, AD-4 |
+| FR3, FR3b (N exécutions, N réglable 1-10) | `app/api/execute/route.ts` + `app/page.tsx` | AD-1, AD-2, AD-3, AD-4 |
 | FR4–FR7 (notation + affichage) | `app/api/score/route.ts` + `app/page.tsx` | AD-1, AD-2, AD-3, AD-4, AD-5 |
 | FR8–FR10 (analyse 4 dimensions) | `app/api/analyze/route.ts` | AD-1, AD-2 |
 | FR11 (clé API sécurisée) | toutes les routes `app/api/**` | AD-1 |
@@ -118,5 +118,5 @@ Un seul environnement : Vercel (build depuis le repo GitHub à créer en tout d�
 ## Deferred
 
 - **Multi-utilisateurs / connexion / base de données** — non-goal du POC (PRD), à cadrer dans un futur PRD si le go est donné.
-- **N configurable, multi-fournisseurs LLM, choix du modèle "réel"** — Future Considerations (P2) du PRD, hors altitude de ce spine POC.
+- **Multi-fournisseurs LLM, choix du modèle "réel"** — Future Considerations (P2) du PRD, hors altitude de ce spine POC. (N configurable ne figure plus ici : ramené dans le POC en FR3b, curseur 1-10, voir AD-4.)
 - **Historique/persistance des évaluations** — dépend de la décision go/no-go, non tranché.
