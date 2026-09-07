@@ -73,6 +73,7 @@ graph LR
 | Naming (fichiers, routes) | Routes API en kebab-case sous `app/api/<verbe>/route.ts` (`execute`, `score`, `analyze`) ; composants React en PascalCase |
 | Data & formats | JSON uniquement en entrée/sortie des routes ; erreurs toujours `{ error: string }` + HTTP 500 (AD-2) |
 | State & cross-cutting | Un seul point d'appel Anthropic par route (pas de fan-out caché) ; aucune variable d'environnement lue côté client |
+| Visual identity | Alignée sur SwoodQuest (app skill tree du cabinet) : police `Fraunces` (titres, via `next/font/google`) + `Geist`/`Geist Mono` (interface, déjà en place) ; couleurs en tokens CSS dans `app/globals.css` (`--primary: #851F6B`, `--background: #fdf6e9`, `--accent: #d99a2b`) — utiliser ces tokens (`bg-primary`, `text-foreground`, etc.), jamais une couleur en dur, pour que les écrans suivants restent visuellement cohérents |
 
 ## Stack
 

@@ -29,6 +29,7 @@ context: []
 - Verified: `npx next build` succeeds (static prerender of `/`), `npx eslint app/page.js` reports no issues, and manually exercised the UI in a browser preview — button stays disabled with empty prompt, stays disabled with prompt filled but criteria containing only blank/whitespace-only lines, and becomes enabled once both prompt and at least one non-blank criteria line are present.
 - Nothing left incomplete relative to this story's scope; the button intentionally does nothing on click yet (out of scope, per spec, for Story 1.3).
 - French UI labels confirmed correct by the user (end users are French-speaking consultants) — not a language-consistency issue, intentional.
+- **Follow-up (2026-09-04, post-review):** visual redesign applied — Fraunces display font added, color tokens (`--primary #851F6B`, `--background #fdf6e9`, `--accent #d99a2b`) introduced in `app/globals.css`, aligned with SwoodQuest for brand consistency (see PRD Nice-to-Have and Architecture Spine's "Visual identity" convention). Resolved two deferred items in the same pass: live criteria count badge, second placeholder example line.
 
 ## Review Triage Log
 

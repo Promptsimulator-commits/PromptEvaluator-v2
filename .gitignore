@@ -44,3 +44,6 @@ next-env.d.ts
 # BMAD tooling (framework, not app code — project docs stay tracked in _bmad-output/)
 /.claude/
 /_bmad/
+
+# Office lock files (e.g. epics.md opened in Word)
+~$*

@@ -2,7 +2,7 @@
 title: Prompt Evaluator
 status: final
 created: 2026-09-04
-updated: 2026-09-04 (v3 — Timeline Considerations : repo/squelette créés, avancement du build reflété)
+updated: 2026-09-04 (v4 — identité visuelle alignée sur SwoodQuest ajoutée en Nice-to-Have)
 ---
 
 # PRD — Prompt Evaluator
@@ -65,7 +65,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 
 ### Nice-to-Have (P1)
 
-- Interface simple et ludique (cohérent avec l'objectif "intuitif et simple d'utilisation"), sans exigence de charte graphique précise pour le POC.
+- Interface simple et ludique (cohérent avec l'objectif "intuitif et simple d'utilisation"). Identité visuelle alignée sur SwoodQuest (l'app skill tree du cabinet) pour la cohérence de marque : police Fraunces (titres) + Geist/Geist Mono (interface), violet `#851F6B` en accent principal, fond crème, cartes blanches arrondies.
 
 ### Future Considerations (P2)
 

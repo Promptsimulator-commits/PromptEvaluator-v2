@@ -5,6 +5,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-enter-prompt-and-criteria.md`
   summary: Show a live count of recognized (non-blank) criteria lines as the user types.
   evidence: Would confirm the parsing matches user intent (e.g. that a criterion accidentally split across two lines is read as two). Not required by this story's AC; a pedagogical nice-to-have.
+  status: RESOLVED (2026-09-04) — added as part of the visual identity redesign of app/page.js (amber count badge next to the criteria label).
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-enter-prompt-and-criteria.md`
   summary: Decide whether duplicate criteria lines should be deduplicated or flagged before they reach scoring.
@@ -17,3 +18,4 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-enter-prompt-and-criteria.md`
   summary: Criteria textarea placeholder shows only one example line; a second example line would make the "one criterion per line" convention less ambiguous for first-time users.
   evidence: Minor copy polish, not a functional gap.
+  status: RESOLVED (2026-09-04) — second example line added as part of the visual identity redesign of app/page.js.
