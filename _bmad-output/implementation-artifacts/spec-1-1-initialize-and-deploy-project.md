@@ -47,6 +47,7 @@ baseline_commit: 'NO_VCS'
 
 - Scaffolded with Next.js 16.3.4 + Tailwind 4.3.3, JavaScript, ESLint. Local build succeeds (`npm run build`).
 - Repo created at `https://github.com/Promptsimulator-commits/Prompt-evaluator.git`; local `main` branch pushed and tracking `origin/main` (commits: `0d56fcb` scaffold, `b6d9412` README).
+- **Follow-up (2026-09-04):** repo migrated to `https://github.com/swoodpartners/PromptEvaluator.git` (official cabinet org) — `git remote set-url origin` + push, full history preserved. `origin` now points there.
 - `README.md` rewritten with project description, stack, and setup instructions (default `create-next-app` README replaced).
 - Blocker: no Anthropic API key yet — the PM needs budget sign-off from their manager first. Does not block this story (the skeleton needs no key to load) but does block Story 1.3 (execution) until resolved. Vercel deployment proceeds without `ANTHROPIC_API_KEY` set; to be added via Vercel dashboard (Project → Settings → Environment Variables) once available.
 

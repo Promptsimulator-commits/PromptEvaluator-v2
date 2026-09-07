@@ -2,7 +2,7 @@
 title: Prompt Evaluator
 status: final
 created: 2026-09-04
-updated: 2026-09-04 (v4 — identité visuelle alignée sur SwoodQuest ajoutée en Nice-to-Have)
+updated: 2026-09-04 (v5 — repo migré vers swoodpartners/PromptEvaluator, migration Vercel→VPS OVH planifiée)
 ---
 
 # PRD — Prompt Evaluator
@@ -91,7 +91,7 @@ Ce projet **remplace** l'approche précédente ("Prompt Trainer" : parcours à 9
 ## Timeline Considerations
 
 - **Délai** : 3 jours à partir du 2026-09-04, le plus tôt possible.
-- **Contrainte technique de départ** (mise à jour) : le repo GitHub (`Promptsimulator-commits/Prompt-evaluator`) et le squelette du projet (Next.js + Tailwind) sont créés et poussés. Restent à faire : le déploiement Vercel (en cours) et le backend (routes API `/api/execute`, `/api/score`, `/api/analyze`, à construire au fil des prochaines stories). La clé API Anthropic n'est pas encore disponible — le PM doit d'abord obtenir le budget de son responsable ; ceci bloque uniquement les fonctionnalités d'exécution (Story 1.3+), pas le squelette ni son déploiement.
+- **Contrainte technique de départ** (mise à jour) : le repo GitHub (`swoodpartners/PromptEvaluator`, migré depuis un repo personnel initial) et le squelette du projet (Next.js + Tailwind) sont créés et poussés. Déploiement actuellement sur Vercel (fonctionnel, sert la démo) ; **migration prévue vers un VPS OVH** (contrainte cabinet sur les données + volonté de garder la main sur l'infra) — VPS pas encore commandé (achat en attente), migration à faire une fois provisionné. Reste à construire : le backend (routes API `/api/execute`, `/api/score`, `/api/analyze`, au fil des prochaines stories). La clé API Anthropic n'est pas encore disponible — le PM doit d'abord obtenir le budget de son responsable ; ceci bloque uniquement les fonctionnalités d'exécution (Story 1.3+), pas le squelette ni son déploiement.
 - **Développement** : vibecoding, PM + Claude Code (même approche que Prompt Trainer).
 - **Après la démo** : Si go, déployer la solution à l’ensemble des consultants
 
