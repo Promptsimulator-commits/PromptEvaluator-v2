@@ -170,10 +170,10 @@ export default function Home() {
             Prompt Evaluator
           </p>
           <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">
-            Testez votre prompt
+            Teste ton prompt
           </h1>
           <p className="text-sm text-foreground/60">
-            Écrivez un prompt et ce qu&apos;un bon résultat doit respecter — l&apos;IA se charge du reste.
+            Écris un prompt et ce qu&apos;un bon résultat doit respecter — l&apos;IA se charge du reste.
           </p>
         </div>
 
@@ -191,7 +191,7 @@ export default function Home() {
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isRunning}
               rows={8}
-              placeholder="Saisissez le prompt que vous souhaitez tester…"
+              placeholder="Saisis le prompt que tu souhaites tester…"
               className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
@@ -250,7 +250,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-foreground/60">
               {runCount === 1
-                ? "Une seule exécution : vous verrez un résultat, mais pas la stabilité du prompt."
+                ? "Une seule exécution : tu verras un résultat, mais pas la stabilité du prompt."
                 : `Le prompt sera exécuté ${runCount} fois pour révéler les variations d'une exécution à l'autre.`}
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function Home() {
               </h3>
               {totalRuns === 1 && (
                 <p className="text-xs text-foreground/60">
-                  Une seule exécution : ce ratio ne mesure pas encore la stabilité de votre prompt.
+                  Une seule exécution : ce ratio ne mesure pas encore la stabilité de ton prompt.
                 </p>
               )}
               <ul className="flex flex-col gap-2">
