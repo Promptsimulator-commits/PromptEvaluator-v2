@@ -6,6 +6,27 @@ const MIN_RUNS = 1;
 const MAX_RUNS = 10;
 const DEFAULT_RUNS = 5;
 
+// Renvoie toujours la même forme, que l'appel ait échoué côté serveur
+// (HTTP 500 + { error }) ou côté réseau (fetch qui lève), pour que les deux
+// phases d'orchestration traitent l'échec de la même manière.
+async function callApi(url, body) {
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => null);
+    return { ok: response.ok, data };
+  } catch {
+    return { ok: false, data: { error: "impossible de joindre le serveur" } };
+  }
+}
+
+function formatScore(score) {
+  return score.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+}
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [criteria, setCriteria] = useState("");
@@ -17,58 +38,90 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
 
-  const criteriaCount = useMemo(
-    () => criteria.split("\n").filter((line) => line.trim().length > 0).length,
+  // Les doublons sont retirés : deux lignes identiques compteraient deux fois
+  // dans la note (FR5) et se télescoperaient dans le regroupement par critère
+  // de la Story 1.5. On conserve l'ordre de première apparition.
+  const criteriaList = useMemo(
+    () => [
+      ...new Set(
+        criteria
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+      ),
+    ],
     [criteria]
   );
 
+  const criteriaCount = criteriaList.length;
   const canEvaluate = prompt.trim().length > 0 && criteriaCount > 0 && !isRunning;
+  const scoredCount = runs.filter((run) => run.results !== null).length;
 
-  // Orchestration côté client (AD-4) : les exécutions s'enchaînent une par une
-  // pour que les résultats s'affichent au fur et à mesure. Si un seul appel
-  // échoue, toute l'évaluation est abandonnée — aucun résultat partiel n'est
-  // conservé à l'écran.
+  // Orchestration côté client (AD-4), en deux phases successives : d'abord les
+  // N exécutions, puis les N notations. Si un seul appel échoue, à l'une ou
+  // l'autre phase, toute l'évaluation est abandonnée — aucun résultat partiel
+  // n'est conservé à l'écran.
   async function handleEvaluate() {
     setIsRunning(true);
     setError(null);
     setRuns([]);
 
-    const collected = [];
     // Figé au lancement : déplacer le curseur pendant une évaluation ne doit
     // pas changer le nombre d'exécutions en cours de route.
     const total = runCount;
     setTotalRuns(total);
 
+    const abandon = (message) => {
+      setRuns([]);
+      setError(
+        `${message} Évaluation abandonnée, aucun résultat partiel n'est retenu.`
+      );
+      setIsRunning(false);
+    };
+
+    const collected = [];
+
+    // Phase 1 — exécuter le prompt N fois (FR3).
     for (let i = 0; i < total; i++) {
-      let response;
+      const { ok, data } = await callApi("/api/execute", { prompt });
 
-      try {
-        response = await fetch("/api/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-        });
-      } catch {
-        setRuns([]);
-        setError(
-          `Exécution ${i + 1}/${total} : impossible de joindre le serveur. Évaluation abandonnée.`
+      if (!ok || typeof data?.output !== "string" || data.output.trim() === "") {
+        abandon(
+          `Exécution ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}.`
         );
-        setIsRunning(false);
         return;
       }
 
-      const data = await response.json().catch(() => null);
+      collected.push({ output: data.output, results: null, score: null });
+      setRuns([...collected]);
+    }
 
-      if (!response.ok || !data?.output) {
-        setRuns([]);
-        setError(
-          `Exécution ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}. Évaluation abandonnée, aucun résultat partiel n'est retenu.`
+    // Phase 2 — noter chacun des N résultats selon les critères (FR4, FR5).
+    for (let i = 0; i < total; i++) {
+      const { ok, data } = await callApi("/api/score", {
+        output: collected[i].output,
+        criteria: criteriaList,
+      });
+
+      const results = data?.results;
+
+      // Le dénominateur du score est le nombre de critères saisis (FR5), pas
+      // le nombre de verdicts reçus : on refuse une réponse dont la taille ne
+      // correspond pas, plutôt que d'afficher une note plausible mais fausse.
+      if (!ok || !Array.isArray(results) || results.length !== criteriaList.length) {
+        abandon(
+          `Notation ${i + 1}/${total} : ${data?.error ?? "erreur inattendue"}.`
         );
-        setIsRunning(false);
         return;
       }
 
-      collected.push(data.output);
+      const passedCount = results.filter((result) => result.passed).length;
+
+      collected[i] = {
+        ...collected[i],
+        results,
+        score: (passedCount / criteriaList.length) * 10,
+      };
       setRuns([...collected]);
     }
 
@@ -102,9 +155,10 @@ export default function Home() {
               id="prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              disabled={isRunning}
               rows={8}
               placeholder="Saisissez le prompt que vous souhaitez tester…"
-              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -124,11 +178,12 @@ export default function Home() {
               id="criteria"
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
+              disabled={isRunning}
               rows={8}
               placeholder={
                 "Un critère par ligne…\nex : La réponse doit être en français\nex : La réponse fait moins de 5 lignes"
               }
-              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -176,8 +231,13 @@ export default function Home() {
               {isRunning ? "Évaluation en cours…" : "Évaluer"}
             </button>
             {isRunning && (
-              <span className="font-mono text-xs text-foreground/60">
-                exécution {Math.min(runs.length + 1, totalRuns)} / {totalRuns}
+              <span
+                aria-live="polite"
+                className="font-mono text-xs text-foreground/60"
+              >
+                {runs.length < totalRuns
+                  ? `exécution ${runs.length + 1} / ${totalRuns}`
+                  : `notation ${Math.min(scoredCount + 1, totalRuns)} / ${totalRuns}`}
               </span>
             )}
           </div>
@@ -196,24 +256,66 @@ export default function Home() {
           <section className="flex flex-col gap-4">
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-                Résultats bruts
+                Résultats
               </h2>
               <span className="font-mono text-xs text-foreground/60">
                 {runs.length} / {totalRuns}
               </span>
             </div>
 
-            {runs.map((output, index) => (
+            {runs.map((run, index) => (
               <article
                 key={index}
                 className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm"
               >
-                <span className="w-fit rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
-                  Exécution {index + 1}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                    Exécution {index + 1}
+                  </span>
+                  {run.score !== null && (
+                    <span className="font-mono text-sm font-semibold text-primary">
+                      {formatScore(run.score)} / 10
+                    </span>
+                  )}
+                </div>
+
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                  {output}
+                  {run.output}
                 </p>
+
+                {run.results && (
+                  <ul className="flex flex-col gap-2 border-t border-border pt-3">
+                    {run.results.map((result, resultIndex) => (
+                      <li key={resultIndex} className="flex gap-2.5 text-sm">
+                        <span
+                          aria-hidden="true"
+                          className={`mt-0.5 font-mono font-semibold ${
+                            result.passed ? "text-primary" : "text-foreground/30"
+                          }`}
+                        >
+                          {result.passed ? "✓" : "✗"}
+                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className={
+                              result.passed
+                                ? "text-foreground"
+                                : "text-foreground/50"
+                            }
+                          >
+                            <span className="sr-only">
+                              {result.passed ? "Validé : " : "Non validé : "}
+                            </span>
+                            {result.criterion}
+                          </span>
+                          <span className="text-xs text-foreground/60">
+                            {result.explanation}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </article>
             ))}
           </section>
