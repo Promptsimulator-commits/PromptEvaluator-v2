@@ -25,4 +25,4 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Project docs
 
-Full PRD, architecture decisions, and epics/stories live in [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/). Working instructions for whoever develops this project are in [`CLAUDE.md`](CLAUDE.md).
+Full PRD, architecture decisions, and epics/stories live in [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/). Working instructions for whoever develops this project are in [`CLAUDE.md`](CLAUDE.md). Branch/PR/review workflow is in [`CONTRIBUTING.md`](CONTRIBUTING.md), and the testing approach is in [`TESTING.md`](TESTING.md).
