@@ -2,16 +2,68 @@
 
 import { useState, useMemo } from "react";
 
+const RUN_COUNT = 5;
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [criteria, setCriteria] = useState("");
+  const [runs, setRuns] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [error, setError] = useState(null);
 
   const criteriaCount = useMemo(
     () => criteria.split("\n").filter((line) => line.trim().length > 0).length,
     [criteria]
   );
 
-  const canEvaluate = prompt.trim().length > 0 && criteriaCount > 0;
+  const canEvaluate = prompt.trim().length > 0 && criteriaCount > 0 && !isRunning;
+
+  // Orchestration côté client (AD-4) : les 5 exécutions s'enchaînent une par une
+  // pour que les résultats s'affichent au fur et à mesure. Si un seul appel
+  // échoue, toute l'évaluation est abandonnée — aucun résultat partiel n'est
+  // conservé à l'écran.
+  async function handleEvaluate() {
+    setIsRunning(true);
+    setError(null);
+    setRuns([]);
+
+    const collected = [];
+
+    for (let i = 0; i < RUN_COUNT; i++) {
+      let response;
+
+      try {
+        response = await fetch("/api/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+      } catch {
+        setRuns([]);
+        setError(
+          `Exécution ${i + 1}/${RUN_COUNT} : impossible de joindre le serveur. Évaluation abandonnée.`
+        );
+        setIsRunning(false);
+        return;
+      }
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.output) {
+        setRuns([]);
+        setError(
+          `Exécution ${i + 1}/${RUN_COUNT} : ${data?.error ?? "erreur inattendue"}. Évaluation abandonnée, aucun résultat partiel n'est retenu.`
+        );
+        setIsRunning(false);
+        return;
+      }
+
+      collected.push(data.output);
+      setRuns([...collected]);
+    }
+
+    setIsRunning(false);
+  }
 
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
@@ -70,16 +122,58 @@ export default function Home() {
             />
           </div>
 
-          <div>
+          <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={handleEvaluate}
               disabled={!canEvaluate}
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-foreground/15 disabled:text-foreground/40 disabled:shadow-none"
             >
-              Évaluer
+              {isRunning ? "Évaluation en cours…" : "Évaluer"}
             </button>
+            {isRunning && (
+              <span className="font-mono text-xs text-foreground/60">
+                exécution {Math.min(runs.length + 1, RUN_COUNT)} / {RUN_COUNT}
+              </span>
+            )}
           </div>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-primary"
+          >
+            {error}
+          </div>
+        )}
+
+        {runs.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+                Résultats bruts
+              </h2>
+              <span className="font-mono text-xs text-foreground/60">
+                {runs.length} / {RUN_COUNT}
+              </span>
+            </div>
+
+            {runs.map((output, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm"
+              >
+                <span className="w-fit rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                  Exécution {index + 1}
+                </span>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                  {output}
+                </p>
+              </article>
+            ))}
+          </section>
+        )}
       </main>
     </div>
   );
