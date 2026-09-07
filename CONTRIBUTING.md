@@ -7,7 +7,8 @@ Pour le contexte produit (PRD, architecture, epics/stories), voir [`_bmad-output
 ## Branches
 
 - Une branche par story : `story-<numéro>-<résumé-court>` (ex. `story-1.4-score-criteria`).
-- Jamais de commit ni de push direct sur `main` — tout passe par une Pull Request.
+- Jamais de commit ni de push direct sur `main` pour un changement de **code** — tout passe par une Pull Request.
+- **Exception** : un changement de documentation pure (fichiers `.md`, sans impact sur le fonctionnement de l'app) peut être fusionné directement sur `main`, sans branche ni PR — la cérémonie n'apporte rien quand il n'y a ni code à vérifier ni comportement à risquer.
 - La branche part de `main` à jour.
 
 ## Commits
