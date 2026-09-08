@@ -1,0 +1,444 @@
+<title>Analyse Enrichie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --background: #fdf6e9;
+    --foreground: #241528;
+    --card: #ffffff;
+    --primary: #851f6b;
+    --primary-soft: rgba(133, 31, 107, 0.1);
+    --accent: #d99a2b;
+    --accent-soft: rgba(217, 154, 43, 0.15);
+    --muted-soft: rgba(36, 21, 40, 0.08);
+    --muted-ink: rgba(36, 21, 40, 0.5);
+    --border: #ecd9b8;
+    --border-strong: #e2c079;
+    --ok: #2f7d4f;
+    --ok-soft: rgba(47, 125, 79, 0.12);
+    --warn: #b3491f;
+    --warn-soft: rgba(179, 73, 31, 0.1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: #1c1120;
+      --foreground: #f4ecec;
+      --card: #271a2c;
+      --primary: #e07dc4;
+      --primary-soft: rgba(224, 125, 196, 0.16);
+      --accent: #e6ac47;
+      --accent-soft: rgba(230, 172, 71, 0.18);
+      --muted-soft: rgba(244, 236, 236, 0.08);
+      --muted-ink: rgba(244, 236, 236, 0.55);
+      --border: #3d2a42;
+      --border-strong: #5a3c56;
+      --ok: #6bc78f;
+      --ok-soft: rgba(107, 199, 143, 0.15);
+      --warn: #e08a5c;
+      --warn-soft: rgba(224, 138, 92, 0.15);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --background: #1c1120;
+    --foreground: #f4ecec;
+    --card: #271a2c;
+    --primary: #e07dc4;
+    --primary-soft: rgba(224, 125, 196, 0.16);
+    --accent: #e6ac47;
+    --accent-soft: rgba(230, 172, 71, 0.18);
+    --muted-soft: rgba(244, 236, 236, 0.08);
+    --muted-ink: rgba(244, 236, 236, 0.55);
+    --border: #3d2a42;
+    --border-strong: #5a3c56;
+    --ok: #6bc78f;
+    --ok-soft: rgba(107, 199, 143, 0.15);
+    --warn: #e08a5c;
+    --warn-soft: rgba(224, 138, 92, 0.15);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .wrap {
+    max-width: 76rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0.2rem 0 0;
+  }
+
+  .lede {
+    max-width: 42rem;
+    color: var(--muted-ink);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0.6rem 0 0;
+  }
+
+  /* --- shared context strip --- */
+  .context {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .context-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: baseline;
+  }
+
+  .context-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-ink);
+  }
+
+  .prompt-text {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--foreground);
+  }
+
+  .prompt-text em {
+    font-style: normal;
+    background: var(--accent-soft);
+    color: var(--foreground);
+    padding: 0.03em 0.3em;
+    border-radius: 0.3em;
+  }
+
+  .stability-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stability-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--muted-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stability-chip.unstable {
+    background: var(--warn-soft);
+    border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+    color: var(--warn);
+    font-weight: 500;
+  }
+
+  .stability-chip.stable {
+    color: var(--muted-ink);
+  }
+
+  .stability-chip .ratio {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* --- comparison grid --- */
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 860px) {
+    .compare { grid-template-columns: 1fr; }
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .option-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 2px solid var(--border-strong);
+  }
+
+  .option-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  .option-title {
+    font-family: "Fraunces", serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .option-sub {
+    font-size: 0.84rem;
+    color: var(--muted-ink);
+    line-height: 1.5;
+  }
+
+  .dims {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .dim-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    position: relative;
+  }
+
+  .dim-card.flagged {
+    border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 20%, transparent);
+  }
+
+  .dim-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .dim-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: capitalize;
+  }
+
+  .dim-status {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .status-clair { background: var(--primary-soft); color: var(--primary); }
+  .status-présent { background: var(--accent-soft); color: var(--accent); }
+  .status-absent { background: var(--muted-soft); color: var(--muted-ink); }
+
+  .dim-explanation {
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--foreground);
+  }
+
+  .dim-explanation .hl {
+    background: var(--warn-soft);
+    color: var(--warn);
+    padding: 0.02em 0.3em;
+    border-radius: 0.3em;
+    font-weight: 500;
+  }
+
+  .dim-example {
+    font-size: 0.78rem;
+    color: var(--muted-ink);
+    border-top: 1px dashed var(--border);
+    padding-top: 0.4rem;
+    line-height: 1.5;
+  }
+
+  .dim-example b {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+
+  .flag-marker {
+    position: absolute;
+    top: -0.55rem;
+    right: 0.9rem;
+    background: var(--warn);
+    color: var(--card);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  /* --- takeaway --- */
+  .takeaway {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.83rem;
+    line-height: 1.55;
+    color: var(--muted-ink);
+  }
+
+  .takeaway b { color: var(--foreground); font-weight: 600; }
+
+  .foot-note {
+    font-size: 0.82rem;
+    color: var(--muted-ink);
+    line-height: 1.6;
+    max-width: 48rem;
+  }
+</style>
+
+<div class="wrap">
+  <div>
+    <p class="eyebrow">Story 2.2 — décision de placement</p>
+    <h1>Où placer la mention des critères instables ?</h1>
+    <p class="lede">Même situation, deux façons de répondre. À gauche : le modèle IA choisit la dimension la plus pertinente. À droite : la mention est toujours forcée dans « Contraintes », quel que soit le critère concerné.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-row">
+      <span class="context-label">Prompt testé</span>
+    </div>
+    <p class="prompt-text">« Rédige un e-mail de relance client, <em>sur un ton formel</em>, avec une signature professionnelle. »</p>
+    <div class="context-row">
+      <span class="context-label">Évaluation existante — N = 5</span>
+    </div>
+    <div class="stability-list">
+      <span class="stability-chip unstable">Le ton est formel <span class="ratio">2/5</span></span>
+      <span class="stability-chip stable">Contient une signature <span class="ratio">5/5</span></span>
+    </div>
+  </div>
+
+  <div class="compare">
+    <!-- OPTION A -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-tag">Option A</span>
+        <span class="option-title">Souple — le modèle choisit</span>
+        <span class="option-sub">La mention atterrit là où elle a du sens pour <em>ce</em> critère précis. Ici, le ton formel relève du persona demandé, donc c'est là qu'elle apparaît.</span>
+      </div>
+      <div class="dims">
+        <div class="dim-card flagged">
+          <span class="flag-marker">Instabilité mentionnée ici</span>
+          <div class="dim-top">
+            <span class="dim-name">Persona</span>
+            <span class="dim-status status-présent">À clarifier</span>
+          </div>
+          <p class="dim-explanation">Le registre attendu (ton formel) est bien nommé dans le prompt, mais son application reste incertaine à l'exécution : <span class="hl">validé seulement 2 fois sur 5</span> lors de ta dernière évaluation.</p>
+          <p class="dim-example"><b>Exemple :</b> ajoute une phrase-type dans le registre attendu, ex. « Nous nous permettons de revenir vers vous concernant... », pour ancrer le ton au lieu de le nommer seul.</p>
+        </div>
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Objectif</span>
+            <span class="dim-status status-clair">Clair</span>
+          </div>
+          <p class="dim-explanation">La relance client est explicitement l'objet du message, sans ambiguïté sur ce qui est attendu.</p>
+        </div>
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Contraintes</span>
+            <span class="dim-status status-présent">À clarifier</span>
+          </div>
+          <p class="dim-explanation">La signature professionnelle est exigée mais son contenu (nom, fonction, coordonnées ?) n'est pas précisé.</p>
+        </div>
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Exemples</span>
+            <span class="dim-status status-absent">Absent</span>
+          </div>
+          <p class="dim-explanation">Aucun exemple de mail ou de formulation n'est fourni pour cadrer le style attendu.</p>
+        </div>
+      </div>
+      <div class="takeaway">
+        <b>Avantage :</b> lecture naturelle, l'instabilité est rattachée au bon endroit pour chaque cas.<br>
+        <b>Risque :</b> imprévisible — tu ne sais pas à l'avance sous quelle dimension chercher.
+      </div>
+    </div>
+
+    <!-- OPTION B -->
+    <div class="option">
+      <div class="option-head">
+        <span class="option-tag">Option B</span>
+        <span class="option-title">Fixe — toujours dans « Contraintes »</span>
+        <span class="option-sub">Même situation, mais la règle impose de toujours rattacher l'instabilité à « Contraintes », même quand ça concerne le ton.</span>
+      </div>
+      <div class="dims">
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Persona</span>
+            <span class="dim-status status-présent">À clarifier</span>
+          </div>
+          <p class="dim-explanation">Le registre attendu (ton formel) est nommé dans le prompt, mais reste général — aucun exemple de formulation ne vient l'ancrer.</p>
+        </div>
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Objectif</span>
+            <span class="dim-status status-clair">Clair</span>
+          </div>
+          <p class="dim-explanation">La relance client est explicitement l'objet du message, sans ambiguïté sur ce qui est attendu.</p>
+        </div>
+        <div class="dim-card flagged">
+          <span class="flag-marker">Instabilité mentionnée ici</span>
+          <div class="dim-top">
+            <span class="dim-name">Contraintes</span>
+            <span class="dim-status status-présent">À clarifier</span>
+          </div>
+          <p class="dim-explanation">Parmi les exigences de forme, le ton formel n'est <span class="hl">respecté que 2 fois sur 5</span> — traité ici comme une contrainte non fiable, au même titre que la signature attendue.</p>
+          <p class="dim-example"><b>Exemple :</b> reformule comme une exigence explicite : « Le message doit être rédigé dans un registre soutenu, sans familiarité, du début à la fin. »</p>
+        </div>
+        <div class="dim-card">
+          <div class="dim-top">
+            <span class="dim-name">Exemples</span>
+            <span class="dim-status status-absent">Absent</span>
+          </div>
+          <p class="dim-explanation">Aucun exemple de mail ou de formulation n'est fourni pour cadrer le style attendu.</p>
+        </div>
+      </div>
+      <div class="takeaway">
+        <b>Avantage :</b> prévisible — toujours au même endroit, facile à documenter et à tester.<br>
+        <b>Risque :</b> parfois un peu artificiel quand le critère instable ne parle pas vraiment de « contraintes » (ici, un ton).
+      </div>
+    </div>
+  </div>
+
+  <p class="foot-note">Dans les deux cas, le format de réponse de l'API ne change pas (toujours les 4 dimensions persona / objectif / contraintes / exemples) — seule la consigne donnée au modèle change. La spec actuelle propose l'Option A.</p>
+</div>
