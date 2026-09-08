@@ -93,21 +93,25 @@ function isValidRunResults(runResults) {
   if (!Array.isArray(runResults[0])) return false;
 
   // Chaque exécution doit noter le même nombre de critères, dans le même
-  // ordre (convention positionnelle de computeUnstableCriteria, Blind Hunter
-  // review) : une exécution de taille différente désynchroniserait le
-  // regroupement par position et fausserait silencieusement l'instabilité
-  // calculée, plutôt que d'être rejetée comme les autres formes invalides.
-  const criteriaCount = runResults[0].length;
+  // ordre, avec le même libellé à chaque position (convention positionnelle
+  // de computeUnstableCriteria). Une exécution de taille différente, ou dont
+  // les critères ne correspondent pas un à un à ceux de la première exécution,
+  // désynchroniserait le regroupement par position et fausserait
+  // silencieusement l'instabilité calculée — rejetée ici comme les autres
+  // formes invalides plutôt que laissée produire un résultat trompeur
+  // (Blind Hunter + Edge Case Hunter review).
+  const referenceCriteria = runResults[0].map((entry) => entry?.criterion);
 
   return runResults.every(
     (run) =>
       Array.isArray(run) &&
-      run.length === criteriaCount &&
+      run.length === referenceCriteria.length &&
       run.every(
-        (entry) =>
+        (entry, index) =>
           entry !== null &&
           typeof entry === "object" &&
           typeof entry.criterion === "string" &&
+          entry.criterion === referenceCriteria[index] &&
           typeof entry.passed === "boolean"
       )
   );
