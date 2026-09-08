@@ -50,6 +50,12 @@ export default function Home() {
   // retape le champ critères après une évaluation terminée, le résumé affiché
   // continue de correspondre à ce qui a été réellement mesuré.
   const [evaluatedCriteria, setEvaluatedCriteria] = useState([]);
+  // Prompt figé au lancement de l'évaluation, pour la même raison que
+  // evaluatedCriteria : si l'utilisateur retape le prompt après une évaluation
+  // terminée sans relancer, ses résultats ne doivent plus être envoyés comme
+  // s'ils portaient sur le texte actuel (Story 2.2 — l'analyse enrichie ne
+  // doit jamais mélanger les résultats d'un prompt avec l'énoncé d'un autre).
+  const [evaluatedPrompt, setEvaluatedPrompt] = useState(null);
   const [runs, setRuns] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   // Distinct de "les résultats existent" : passe à true seulement quand les N
@@ -95,7 +101,29 @@ export default function Home() {
     setAnalysis(null);
 
     const promptSnapshot = prompt;
-    const { ok, data } = await callApi("/api/analyze", { prompt: promptSnapshot });
+    // N'enrichit qu'avec une évaluation complète (isComplete) ET dont le
+    // prompt figé au lancement correspond exactement au texte actuel : sans
+    // cette deuxième condition, éditer le prompt après une évaluation terminée
+    // sans relancer enverrait les résultats d'un autre prompt (Blind Hunter,
+    // Story 2.2 review) — même principe que isAnalysisStale, appliqué ici en
+    // amont pour ne jamais construire la requête erronée plutôt que d'afficher
+    // une analyse incohérente après coup. Données brutes uniquement
+    // (`criterion`/`passed`) : c'est la route qui détermine elle-même les
+    // critères instables (contrat fixé en Story 2.1).
+    const runResults =
+      isComplete && promptSnapshot === evaluatedPrompt
+        ? runs.map((run) =>
+            run.results.map((result) => ({
+              criterion: result.criterion,
+              passed: result.passed,
+            }))
+          )
+        : undefined;
+
+    const { ok, data } = await callApi("/api/analyze", {
+      prompt: promptSnapshot,
+      ...(runResults ? { runResults } : {}),
+    });
 
     if (!ok || !Array.isArray(data?.dimensions)) {
       setAnalysisError(data?.error ?? "Erreur inattendue lors de l'analyse.");
@@ -126,6 +154,7 @@ export default function Home() {
     setTotalRuns(total);
     const criteriaSnapshot = criteriaList;
     setEvaluatedCriteria(criteriaSnapshot);
+    setEvaluatedPrompt(prompt);
 
     const abandon = (message) => {
       setRuns([]);
