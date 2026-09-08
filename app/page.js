@@ -27,6 +27,18 @@ function formatScore(score) {
   return score.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 }
 
+// "absent" < "présent" < "clair" (le meilleur statut) — voir SYSTEM_PROMPT de
+// /api/analyze pour la définition exacte de chaque statut.
+const STATUS_LABEL = { absent: "Absent", présent: "À clarifier", clair: "Clair" };
+
+// Couleur par statut, sur les tokens déjà en place (pas de couleur en dur) :
+// primary = acquis, accent = à travailler, foreground atténué = manquant.
+const STATUS_CLASS = {
+  clair: "bg-primary/10 text-primary",
+  présent: "bg-accent/15 text-accent",
+  absent: "bg-foreground/10 text-foreground/50",
+};
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [criteria, setCriteria] = useState("");
@@ -46,6 +58,14 @@ export default function Home() {
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState(null);
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisError, setAnalysisError] = useState(null);
+  // Prompt figé au lancement de l'analyse en cours : permet de signaler que
+  // l'analyse affichée ne porte plus sur le texte actuel du champ, sans
+  // pour autant l'effacer (l'utilisateur peut vouloir comparer avant/après).
+  const [analyzedPrompt, setAnalyzedPrompt] = useState(null);
+
   // Les doublons sont retirés : deux lignes identiques compteraient deux fois
   // dans la note (FR5) et se télescoperaient dans le regroupement par critère
   // de la Story 1.5. On conserve l'ordre de première apparition.
@@ -62,8 +82,33 @@ export default function Home() {
   );
 
   const criteriaCount = criteriaList.length;
-  const canEvaluate = prompt.trim().length > 0 && criteriaCount > 0 && !isRunning;
+  // "Analyser" et "Évaluer" sont mutuellement exclusifs (décision de revue du
+  // spec 2.1) : un seul enchaînement d'appels IA en vol à la fois.
+  const canEvaluate =
+    prompt.trim().length > 0 && criteriaCount > 0 && !isRunning && !isAnalyzing;
+  const canAnalyze = prompt.trim().length > 0 && !isRunning && !isAnalyzing;
   const scoredCount = runs.filter((run) => run.results !== null).length;
+
+  async function handleAnalyze() {
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setAnalysis(null);
+
+    const promptSnapshot = prompt;
+    const { ok, data } = await callApi("/api/analyze", { prompt: promptSnapshot });
+
+    if (!ok || !Array.isArray(data?.dimensions)) {
+      setAnalysisError(data?.error ?? "Erreur inattendue lors de l'analyse.");
+      setIsAnalyzing(false);
+      return;
+    }
+
+    setAnalyzedPrompt(promptSnapshot);
+    setAnalysis(data.dimensions);
+    setIsAnalyzing(false);
+  }
+
+  const isAnalysisStale = analysis !== null && prompt !== analyzedPrompt;
 
   // Orchestration côté client (AD-4), en deux phases successives : d'abord les
   // N exécutions, puis les N notations. Si un seul appel échoue, à l'une ou
@@ -255,7 +300,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleEvaluate}
@@ -263,6 +308,14 @@ export default function Home() {
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-foreground/15 disabled:text-foreground/40 disabled:shadow-none"
             >
               {isRunning ? "Évaluation en cours…" : "Évaluer"}
+            </button>
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={!canAnalyze}
+              className="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:border-foreground/15 disabled:text-foreground/40 disabled:shadow-none"
+            >
+              {isAnalyzing ? "Analyse en cours…" : "Analyser"}
             </button>
             {isRunning && (
               <span
@@ -272,6 +325,14 @@ export default function Home() {
                 {runs.length < totalRuns
                   ? `exécution ${runs.length + 1} / ${totalRuns}`
                   : `notation ${Math.min(scoredCount + 1, totalRuns)} / ${totalRuns}`}
+              </span>
+            )}
+            {isAnalyzing && (
+              <span
+                aria-live="polite"
+                className="font-mono text-xs text-foreground/60"
+              >
+                analyse en cours…
               </span>
             )}
           </div>
@@ -284,6 +345,64 @@ export default function Home() {
           >
             {error}
           </div>
+        )}
+
+        {analysisError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-primary"
+          >
+            {analysisError}
+          </div>
+        )}
+
+        {analysis && (
+          <section
+            aria-labelledby="analysis-heading"
+            className="flex flex-col gap-4"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <h2
+                id="analysis-heading"
+                className="font-display text-2xl font-semibold tracking-tight text-foreground"
+              >
+                Analyse du prompt
+              </h2>
+              {isAnalysisStale && (
+                <span className="text-xs text-foreground/60">
+                  Prompt modifié depuis cette analyse
+                </span>
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {analysis.map((dimension) => (
+                <article
+                  key={dimension.name}
+                  className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-5 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium capitalize text-foreground">
+                      {dimension.name}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs font-medium ${STATUS_CLASS[dimension.status] ?? "bg-foreground/10 text-foreground/50"}`}
+                    >
+                      {STATUS_LABEL[dimension.status] ?? dimension.status}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground/80">
+                    {dimension.explanation}
+                  </p>
+                  <p className="border-t border-border pt-2 text-xs leading-relaxed text-foreground/60">
+                    <span className="font-medium text-foreground/70">
+                      Exemple :{" "}
+                    </span>
+                    {dimension.example}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
 
         {isComplete && (

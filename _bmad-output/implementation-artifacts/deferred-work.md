@@ -33,3 +33,9 @@
 - source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prompt-evaluator-2026-09-04/ARCHITECTURE-SPINE.md`
   summary: The Structural Seed and AD rules still name TypeScript files (`app/api/score/route.ts`, `app/page.tsx`) while the project is plain JavaScript.
   evidence: Pre-existing deviation established in Story 1.1 and applied consistently since — not a Story 1.4 regression. Worth one correction pass over the spine rather than being re-flagged on every future story.
+
+## Deferred from: review of story 2.1 (2026-09-08)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-1-request-structured-prompt-analysis.md`
+  summary: `/api/analyze` has no size/length cap on the `prompt` field before it's sent to the Anthropic call — only emptiness is checked.
+  evidence: Same pre-existing gap already logged for `/api/execute`/`/api/score`'s inputs (no max length decided anywhere yet, relevant to NFR2 budget) — but more pointed here since this route's own system prompt calls out that the user prompt is the most exposed, most-likely-adversarial input in the tool. Not blocking for the POC; revisit alongside the existing deferred entry when a length limit is actually decided for the app.
