@@ -93,8 +93,12 @@ export async function POST(request) {
   // sont peu fiables pour compter, alors qu'ils jugent bien le fond d'un
   // texte. On donne donc un chiffre exact au juge plutôt que de le laisser
   // évaluer une contrainte de longueur/format à l'œil.
-  const wordCount = output.trim().split(/\s+/).filter(Boolean).length;
-  const charCount = output.length;
+  const trimmedOutput = output.trim();
+  const wordCount = trimmedOutput.split(/\s+/).length;
+  // Spread iterates by Unicode code point, so a surrogate-pair character
+  // (e.g. an emoji) counts as 1 instead of 2 — closer to what a human
+  // would call one "character" than `.length` (UTF-16 code units).
+  const charCount = [...trimmedOutput].length;
 
   const userMessage = [
     "Résultat à évaluer :",

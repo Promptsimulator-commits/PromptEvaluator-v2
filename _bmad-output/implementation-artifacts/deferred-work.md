@@ -39,3 +39,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-1-request-structured-prompt-analysis.md`
   summary: `/api/analyze` has no size/length cap on the `prompt` field before it's sent to the Anthropic call — only emptiness is checked.
   evidence: Same pre-existing gap already logged for `/api/execute`/`/api/score`'s inputs (no max length decided anywhere yet, relevant to NFR2 budget) — but more pointed here since this route's own system prompt calls out that the user prompt is the most exposed, most-likely-adversarial input in the tool. Not blocking for the POC; revisit alongside the existing deferred entry when a length limit is actually decided for the app.
+
+## Deferred from: code review of fix-score-length-precision (2026-09-08)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-score-length-precision.md`
+  summary: `/api/score`'s word-count computation (`output.trim().split(/\s+/)`) is inaccurate for non-whitespace-delimited scripts (e.g. Japanese, Chinese) — it would return something like "1 word" for a full paragraph, and the judge is explicitly told to trust this measured count over its own reading impression.
+  evidence: Real and verified — the whitespace-split approach cannot segment words in scripts without spaces. Deferred rather than fixed: confirmed with the user that this tool's users are francophone/anglophone consultants only, so non-whitespace-delimited output is out of scope for this POC. Revisit only if the tool's user base changes.
