@@ -15,7 +15,11 @@ typography:
   display:
     fontFamily: 'Fraunces'
     fontWeight: '700'
-    usage: 'Product name (H1), field labels, section headings'
+    usage: 'Product name (H1) and the tagline beneath it — the two elements meant to read as the dominant brand moment'
+  display-label:
+    fontFamily: 'Fraunces'
+    fontWeight: '500'
+    usage: 'Field/section labels (Prompt à évaluer, Critères d''acceptation, Nombre d''exécutions, etc.) — same family as display, lighter weight: ties them to the product''s identity without competing with the H1 for dominance'
   body:
     fontFamily: 'Geist Sans'
     usage: 'Body copy, buttons, inputs, help text'
@@ -67,7 +71,8 @@ No dark mode exists today (static light theme only) — a known gap for this POC
 
 ## Typography
 
-- **Fraunces (display, bold)** — the product name "Prompt Evaluator" (large, dominant) and every field/section label ("Prompt à évaluer", "Critères d'acceptation…", "Nombre d'exécutions", "Synthèse de l'évaluation", etc.). Also the small bold tagline "TESTE TON PROMPT" beneath the product name — same family as the H1, deliberately smaller, so the whole header reads as one typographic family at two scales rather than two competing voices.
+- **Fraunces bold (`{typography.display}`)** — the product name "Prompt Evaluator" (large, dominant) and the small bold tagline "TESTE TON PROMPT" beneath it — same family and weight as the H1, deliberately smaller, so the header reads as one typographic family at two scales rather than two competing voices.
+- **Fraunces medium (`{typography.display-label}`)** — every field/section label ("Prompt à évaluer", "Critères d'acceptation…", "Nombre d'exécutions", "Synthèse de l'évaluation", etc.). Same family as the header, lighter weight — the label ties to the product's identity without competing with the H1/tagline for dominance. Deliberately *not* the same 700-weight token: this pass changed only the family on existing labels, not their size or weight.
 - **Geist Sans (body)** — everything the user reads or types: descriptive copy, textarea content and placeholders, button labels, result text, explanations.
 - **Geist Mono (numeric chips)** — anything that's a count or a measurement: "5 exécutions", "0 critère", "3,3 / 10", per-criterion "X / N" ratios. Monospace signals "this is measured data," distinct from prose.
 
@@ -99,7 +104,7 @@ Three roles, never mixed:
 
 | Do | Don't |
 |---|---|
-| Fraunces bold for the product name and every structural label | Fraunces for body copy, results, or anything the user typed |
+| Fraunces (bold for H1/tagline, medium for field labels) for structural text | Fraunces for body copy, results, or anything the user typed |
 | Accent (`#d99a2b`) for counts, ratios, and the mid-tier status | Accent on a button or as a second "primary" color |
 | Monospace for anything numeric/measured | Monospace for prose or labels |
 | One elevated white card per logical block | Nested cards or shadows stacked for fake depth |

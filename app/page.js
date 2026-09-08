@@ -332,7 +332,7 @@ export default function Home() {
               <span>{MIN_RUNS}</span>
               <span>{MAX_RUNS}</span>
             </div>
-            <p className="text-xs text-foreground/60">
+            <p className="text-sm text-foreground/70">
               {runCount === 1
                 ? "Une seule exécution : tu verras un résultat, mais pas la stabilité du prompt."
                 : `Le prompt sera exécuté ${runCount} fois. Plus il y a d'exécutions, plus la mesure de fiabilité est précise, mais chaque exécution a un coût — 5 est un bon compromis pour un premier test.`}
@@ -375,7 +375,7 @@ export default function Home() {
               </span>
             )}
           </div>
-          <p className="text-xs text-foreground/60">
+          <p className="text-sm text-foreground/70">
             <strong className="font-medium text-foreground">Évaluer</strong> exécute et note ton prompt plusieurs fois pour mesurer sa fiabilité.
             <br />
             <strong className="font-medium text-foreground">Analyser</strong> donne un diagnostic de sa structure (persona, objectif, contraintes, exemples), avec ou sans évaluation préalable.
