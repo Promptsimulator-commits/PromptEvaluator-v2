@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 
 const MIN_RUNS = 1;
 const MAX_RUNS = 10;
@@ -239,23 +240,32 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-background font-sans">
       <main className="flex flex-1 w-full max-w-3xl flex-col gap-6 py-16 px-6 sm:px-10">
-        <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-            Prompt Evaluator
-          </p>
-          <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">
-            Teste ton prompt
-          </h1>
-          <p className="text-sm text-foreground/60">
-            Écris un prompt et ce qu&apos;un bon résultat doit respecter — l&apos;IA se charge du reste.
-          </p>
+        <div className="flex flex-row items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">
+              Prompt Evaluator
+            </h1>
+            <p className="font-display text-xs font-bold tracking-widest text-primary uppercase">
+              Teste ton prompt
+            </p>
+            <p className="text-sm text-foreground/70">
+              Rédige un prompt et les critères qu&apos;un bon résultat doit respecter. On l&apos;exécute plusieurs fois pour vérifier sa fiabilité.
+            </p>
+          </div>
+          <Image
+            src="/getsitelogo.png"
+            alt="Logo de l'entreprise"
+            width={40}
+            height={40}
+            className="shrink-0"
+          />
         </div>
 
         <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-2">
             <label
               htmlFor="prompt"
-              className="text-sm font-medium text-foreground"
+              className="font-display text-sm font-medium text-foreground"
             >
               Prompt à évaluer
             </label>
@@ -265,7 +275,7 @@ export default function Home() {
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isRunning}
               rows={8}
-              placeholder="Saisis le prompt que tu souhaites tester…"
+              placeholder="Saisis le prompt que tu souhaites tester"
               className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
@@ -274,12 +284,12 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="criteria"
-                className="text-sm font-medium text-foreground"
+                className="font-display text-sm font-medium text-foreground"
               >
                 Critères d&apos;acceptation (un par ligne)
               </label>
               <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
-                {criteriaCount} critère{criteriaCount !== 1 ? "s" : ""}
+                {criteriaCount} critère{criteriaCount > 1 ? "s" : ""}
               </span>
             </div>
             <textarea
@@ -289,7 +299,7 @@ export default function Home() {
               disabled={isRunning}
               rows={8}
               placeholder={
-                "Un critère par ligne…\nex : La réponse doit être en français\nex : La réponse fait moins de 5 lignes"
+                "Un critère par ligne\nex : La réponse doit être en français\nex : La réponse fait moins de 5 lignes"
               }
               className="w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             />
@@ -299,7 +309,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="runCount"
-                className="text-sm font-medium text-foreground"
+                className="font-display text-sm font-medium text-foreground"
               >
                 Nombre d&apos;exécutions
               </label>
@@ -322,10 +332,10 @@ export default function Home() {
               <span>{MIN_RUNS}</span>
               <span>{MAX_RUNS}</span>
             </div>
-            <p className="text-xs text-foreground/60">
+            <p className="text-sm text-foreground/70">
               {runCount === 1
                 ? "Une seule exécution : tu verras un résultat, mais pas la stabilité du prompt."
-                : `Le prompt sera exécuté ${runCount} fois pour révéler les variations d'une exécution à l'autre.`}
+                : `Le prompt sera exécuté ${runCount} fois. Plus il y a d'exécutions, plus la mesure de fiabilité est précise, mais chaque exécution a un coût — 5 est un bon compromis pour un premier test.`}
             </p>
           </div>
 
@@ -365,6 +375,11 @@ export default function Home() {
               </span>
             )}
           </div>
+          <p className="text-sm text-foreground/70">
+            <strong className="font-medium text-foreground">Évaluer</strong> exécute et note ton prompt plusieurs fois pour mesurer sa fiabilité.
+            <br />
+            <strong className="font-medium text-foreground">Analyser</strong> donne un diagnostic de sa structure (persona, objectif, contraintes, exemples), avec ou sans évaluation préalable.
+          </p>
         </div>
 
         {error && (
