@@ -51,6 +51,20 @@ context: []
 - Given a criterion stating a word/line/page limit and an output that clearly violates it, when `/api/score` judges it, then the criterion is marked not passed and the explanation is consistent with the measured count.
 - Given a criterion with no length aspect, when `/api/score` judges it, then its verdict is unaffected by the new count fact (no regression on Epic 1's existing scoring behavior).
 
+### Review Findings
+
+- [x] [Review][Defer] `wordCount` is inaccurate for non-whitespace-delimited scripts (CJK etc.) — the instruction tells the judge to trust this number over its own reading impression, which could make judgment worse (not better) for such output. [app/api/score/route.js:96] — deferred: this tool's users are francophone/anglophone consultants only; non-whitespace-delimited output (CJK etc.) is out of scope for this POC.
+- [x] [Review][Patch] `charCount` overcounts due to UTF-16 surrogate pairs (emoji) [app/api/score/route.js:97]
+- [x] [Review][Patch] `charCount` computed on untrimmed `output` while `wordCount` uses trimmed — inconsistent basis [app/api/score/route.js:96-97]
+- [x] [Review][Patch] Demo-dossier copy claims "un verdict reproductible", overstating the determinism of an LLM judgment [demo-dossier.html]
+- [x] [Review][Patch] Redundant unreachable `.filter(Boolean)` after splitting an already-trimmed non-empty string [app/api/score/route.js:96]
+
+**Rejected**
+- `false` — SYSTEM_PROMPT references length units (lines, paragraphs) that aren't explicitly measured/passed. Verified directly: a 6-line output against "moins de 5 lignes" / "fait exactement 6 lignes" was judged correctly on both without any line-count fact provided — the judge reliably counts explicit structural units (lines/paragraphs) by reading the text; the "unreliable at counting" problem this fix targets is specific to aggregate word counting over continuous prose, not discrete structural counting.
+- `false` — Code Map said the count computation would go "right after the existing `output` validation" but it's placed after the `criteria`/API-key checks instead. No behavioral difference: all guards still run before the Anthropic call either way.
+- rejected (fix would edit the spec under review) — Code Map/Boundaries state "no other file changes needed," but the diff also touches `demo-dossier.html`. That edit was intentional and user-requested (not scope creep) — the gap is in the spec's own scope note, which this workflow's rules exclude from patching.
+- rejected (fix would edit the spec under review) — Tasks & Acceptance checkboxes are left unchecked despite `status: done` and a populated Implementation Notes/Verification section.
+
 ## Implementation Notes
 
 - `app/api/score/route.js`: computed `wordCount` (whitespace-split, filtered) and `charCount` (raw length) from `output`, right after the existing emptiness check. Added a labeled `Longueur mesurée du résultat ci-dessus : X mots, Y caractères.` line to `userMessage`. Added one `SYSTEM_PROMPT` rule telling the judge to use this measured count for any length/format-type criterion, and to apply its own general knowledge (not a ratio we invented) when the unit isn't a direct word/character count (e.g. "pages").
@@ -62,6 +76,7 @@ context: []
   - **Non-length criterion regression check**: a rude/informal output against "le ton est professionnel et poli" → still correctly failed on tonal grounds, unaffected by the new count fact.
   - **End-to-end, real generation** (not synthetic): prompt "Rédige une synthèse... 1000 mots maximum" + matching criterion, run through the actual UI with a real `/api/execute` call. Real output measured 840 words; `/api/score` correctly passed the criterion citing "contient 840 mots, ce qui est inférieur à la limite de 1000 mots imposée" — confirms the fix holds against real (not fabricated) model output, not just crafted test strings.
 - Did not re-run the network-failure/500/malformed-response scenarios from Story 1.4, per the spec's own Verification note — this change touches none of that code (only adds two computed numbers and one message line before the existing call).
+- **Post-review patches** (`/bmad-code-review`, 2026-09-08): `charCount` now iterates `[...trimmedOutput]` instead of using `.length` directly — fixes both the UTF-16 surrogate-pair overcount (emoji) and the trim-basis mismatch with `wordCount` in one change; the now-redundant `.filter(Boolean)` was dropped since a trimmed non-empty string can't produce empty split tokens. Softened the demo-dossier's "verdict reproductible" to "verdict plus fiable" (an LLM judgment is more reliable with an objective count, not fully deterministic). Re-verified after the patch: the 1000/1001-word boundary still holds, and a crafted output with padding whitespace + an emoji now measures correctly (20 characters, matching `[...str.trim()].length`). Deferred: `wordCount`'s whitespace-split approach doesn't support non-whitespace-delimited scripts (CJK) — out of scope, this tool's users are francophone/anglophone consultants only (see `deferred-work.md`).
 
 ## Verification
 
