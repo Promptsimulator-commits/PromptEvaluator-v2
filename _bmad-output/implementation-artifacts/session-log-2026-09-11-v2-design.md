@@ -2,7 +2,7 @@
 
 Journal de la conversation qui a mené à la création du dépôt V2 et aux décisions de conception prises jusqu'ici. Objectif : que quiconque reprenne le travail (Claude dans une nouvelle session, ou un humain) comprenne le contexte complet sans avoir à relire l'historique du chat.
 
-**⚠️ Prochaine étape immédiate : contacter Sally (persona UX designer, skill `bmad-agent-ux-designer` puis `bmad-ux`) pour reprendre la conception à partir des 6 points listés dans `_bmad-output/planning-artifacts/points-a-revoir-avec-sally.md`.** Tout le fond mécanique ci-dessous est validé par la PM ; ce qui reste concerne l'écran, l'interaction, et l'explication pédagogique à l'utilisateur.
+**Mise à jour (même journée) : Sally a été contactée, les 6 points ont été tranchés, la documentation du dépôt a été alignée sur le pivot, et le développement (Epic 1 complet + Story 2.1/2.2 de l'Epic 2) a été fait dans la foulée — voir §10 et suivants pour la suite du journal.** Tout le fond mécanique ci-dessous est validé par la PM ; ce qui suit documente l'écran, l'interaction, la pédagogie, puis le build.
 
 ---
 
@@ -107,10 +107,66 @@ La PM veut que V1 et V2 coexistent, documentées et comparables, pour qu'une fut
 - **V2** (`https://github.com/Promptsimulator-commits/PromptEvaluator-v2`) : cloné en local dans `C:\Users\LaurentBENEZECH\Prompt evaluator-v2`, copie complète de l'historique V1 poussée, mêmes renommages avec suffixe `-v2`, bandeau "Version 2 — en développement" dans `CLAUDE.md`/`README.md`. Déployé manuellement sur `https://prompt-evaluator-v2-eight.vercel.app` (projet Vercel `prompt-evaluator-v2`), variable `ANTHROPIC_API_KEY` configurée (même clé que V1, décision PM).
 - **Point d'attention** : la connexion GitHub↔Vercel a échoué pour les deux dépôts (l'app Vercel n'a pas accès aux organisations GitHub concernées) — pas de déploiement automatique au push, il faut relancer `vercel --prod` manuellement après chaque merge sur les deux projets, ou configurer la connexion depuis le dashboard Vercel.
 
-## 8. Ce qui reste ouvert
+## 8. Ce qui restait ouvert avant Sally
 
-Voir `_bmad-output/planning-artifacts/points-a-revoir-avec-sally.md` — 6 points, tous côté écran/interaction/pédagogie, aucun point de fond mécanique restant en suspens.
+Voir `_bmad-output/planning-artifacts/points-a-revoir-avec-sally.md` — 6 points, tous côté écran/interaction/pédagogie, aucun point de fond mécanique en suspens à ce stade. Tous tranchés en §10 ci-dessous.
 
-## 9. Prochaine étape
+## 9. (obsolète) Prochaine étape prévue à ce moment-là
 
-Contacter Sally (`bmad-agent-ux-designer` → `bmad-ux`, mode Update puisque ce dépôt n'a pas encore de `DESIGN.md`/`EXPERIENCE.md` propres — à créer en mode Create si absents) pour concevoir l'écran à partir de l'ensemble des décisions ci-dessus.
+Contacter Sally (`bmad-agent-ux-designer` → `bmad-ux`) pour concevoir l'écran — fait, voir §10.
+
+---
+
+## 10. Session Sally (UX) — les 6 points tranchés
+
+Repris via `bmad-agent-ux-designer` → `bmad-ux`, mode **Update** (un DESIGN.md/EXPERIENCE.md existait déjà dans le dépôt, hérité de V1, daté 2026-09-08, décrivant encore la mécanique V1 — pas une conception vierge comme supposé en §9). Décisions, dans l'ordre des 6 points :
+
+1. **Explication par dimension** : dépliable au clic sur chaque dimension, pas toujours visible, aucune des 3 dimensions mise en avant comme "point faible" (contrairement au document de départ qui prévoyait ce concept — abandonné).
+2. **Paliers** : garder à la fois le chiffre (0-10) et le libellé (Absent/À clarifier/Clair/Très clair) — le chiffre donne la nuance fine, le libellé le sens immédiat.
+3. **Critères de base fixes** : décision initiale "deux groupes visuellement séparés" **révisée en cours de session** — finalement **totalement invisibles** à l'écran de validation des critères. S'ils font échouer une réponse, ce n'est mentionné que dans l'explication pédagogique de la dimension Contraintes, jamais comme ligne séparée.
+4. **Mise en page à 3 dimensions** : 3 colonnes égales sur une rangée (remplace la grille 2×2 de l'ancienne mécanique à 4 dimensions).
+5. **Vulgarisation du calcul en 2 temps** : pas d'explication générique en haut d'écran — l'explication de la correction comportementale apparaît uniquement dans le détail dépliable de la dimension concernée, et seulement quand une correction a réellement eu lieu, avec le détail concret de ce qui variait (ex. "2 réponses sur 5 dépassaient la longueur demandée"), jamais un delta de points brut.
+6. **Écran d'extraction/validation** : pas de modale — le formulaire s'ouvre vers le bas sous le prompt (une seule surface, cohérent avec le principe une-seule-page). Bouton "Confirmer et lancer" explicite (distinct du bouton "Envoyer" initial) + bouton "Annuler" qui referme et revient au prompt.
+
+**Point ajouté en cours de session, hors des 6 initiaux** : la proposition de départ gardait implicitement deux boutons métier ("Envoyer" pour générer, "Analyser" pour diagnostiquer). Risque identifié : soit un seul bouton "Envoyer" qui affiche tout sur un écran unique (trop long), soit deux boutons (retombe dans la confusion d'origine). **Solution retenue** : un seul bouton métier "Envoyer" qui déclenche tout le flux, puis une **bascule d'affichage** ("Voir l'analyse" / "Voir les réponses") entre deux vues — pure bascule côté client, jamais un nouvel appel API.
+
+**Livrables** : `DESIGN.md`/`EXPERIENCE.md` mis à jour (`_bmad-output/planning-artifacts/ux-designs/ux-prompt-evaluator-2026-09-08/`), 2 mocks HTML ajoutés (`mockups/criteria-validation-panel.html`, `mockups/results-analyse-view.html`). Un `[ASSUMPTION]` laissé dans `DESIGN.md` sur le traitement visuel du 4ᵉ palier "Très clair" (teinte `primary/30`, plus dense que `primary/15` pour "Clair") — non contredit depuis par l'usage réel en Story 2.1.
+
+## 11. Correction de cap — alignement PRD/epics/architecture/démo (`bmad-correct-course`)
+
+Découverte en cours de session : le PRD (`prd-v2.md`), les epics (`epics-v2.md`) et l'architecture (`ARCHITECTURE-SPINE-v2.md`) portaient le suffixe `-v2` mais leur **contenu était resté celui de la mécanique V1** (critères manuels, 4 dimensions) — seuls le journal de session et les spines UX reflétaient le pivot. Un chantier `bmad-correct-course` complet a réécrit ces trois documents plus le dossier de démo (`demo-dossier-v2.html`) et les bannières `CLAUDE.md`/`README.md`, en mode incrémental (chaque changement approuvé avant application). Détail complet et raisonnement : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-09-11.md`.
+
+Corrections notables faites au passage :
+- Incohérence PRD corrigée : un Non-Goal disait "N fixé à 5" alors que FR3b donne un curseur 1-10 à l'utilisateur — contradiction pré-existante, pas liée au pivot.
+- `sprint-status.yaml` remis à `backlog` pour toutes les nouvelles stories (les anciennes, marquées `done`, couvraient la mécanique retirée) — seule la Story 1.1 (infrastructure) restait valide telle quelle.
+
+PR fusionnée sur `main` (branche `docs/v2-mechanic-pivot`).
+
+## 12. Développement — Epic 1 (Envoyer un prompt : extraction, génération, notation en arrière-plan)
+
+Process retenu pour chaque story : `bmad-build` (spec → approbation PM → implémentation par sous-agent → vérification du diff → revue → présentation), une branche Git dédiée par story, PR ouverte manuellement (le `gh` CLI n'est pas authentifié dans cet environnement — lien de création de PR donné à chaque fois), titre/description de PR générés automatiquement en anglais, merge fait par la PM puis confirmation en chat pour enchaîner sur la story suivante sans re-demander (préférence explicite, voir mémoire `feedback_pr_workflow_v2`).
+
+- **Story 1.1** (infrastructure) : déjà faite avant le pivot, inchangée.
+- **Story 1.2** — Saisir un prompt et lancer l'extraction automatique de critères. Nouvelle route `/api/extract-criteria`. Remplace le champ critères manuel + boutons Évaluer/Analyser par un champ prompt + bouton unique "Envoyer". Revue à 3 lentilles (Blind Hunter, Edge Case Hunter, Verification Gap) — 2 correctifs (déduplication des critères côté serveur, garde anti double-clic).
+- **Story 1.3** — Réviser et valider la liste de critères extraits (édition en place, suppression, ajout, chip de comptage, "Confirmer et lancer"/"Annuler"). À partir de cette story, revue réduite à **une seule lentille (Edge Case Hunter)**, décision de coût en tokens prise par la PM (voir §14). 1 correctif (garde contre un critère vide).
+- **Story 1.4** — Générer N réponses de façon sécurisée (`/api/execute` en boucle, N figé au clic, affichage progressif, abandon complet sur échec). Aucun correctif nécessaire après revue.
+- **Story 1.5** — Noter chaque réponse en arrière-plan (`/api/score` étendu : 3 critères fixes injectés **côté serveur uniquement**, jamais envoyés/affichés). Deux vrais bugs trouvés et corrigés en marge du spec (texte de progression erroné pendant la notation ; bouton "Envoyer" resté cliquable pendant génération+notation, fenêtre de corruption d'état — `canSend` corrigé).
+
+Epic 1 marqué `done` dans `sprint-status.yaml` une fois la Story 1.5 mergée.
+
+## 13. Développement — Epic 2 (Notation par dimension, en cours)
+
+- **Story 2.1** — Calculer et afficher la note par dimension à partir du signal textuel. Nouvelle route `/api/analyze-dimensions` (remplace l'ancienne `/api/analyze` de la mécanique V1, laissée mais non utilisée — dette technique mineure loggée dans `deferred-work.md`). Palier toujours calculé en code à partir de la note, jamais laissé au modèle. Déclenchement automatique dès la fin de la notation (Epic 1), jamais au clic sur la bascule. Bascule Réponses/Analyse + 3 cartes identiques (non dépliables à ce stade).
+- **Story 2.2** — Appliquer la correction comportementale à la note. En écrivant cette story, un vrai trou d'architecture a été trouvé : `AD-4b` (ARCHITECTURE-SPINE-v2.md) ne prévoyait d'envoyer que `scoreResults` à la route d'analyse, mais juger la divergence de ton/angle (Objectif, Contexte) nécessite de lire le **texte** des réponses générées, pas seulement les verdicts critère par critère — corrigé en ajoutant `responses` au contrat. Contraintes se calcule en code (déterministe, taux d'échec) ; Objectif/Contexte via un second appel IA qui compare les textes. `correctionApplied` vrai seulement si la correction est non nulle (modérée/forte, jamais "faible"). Un correctif de revue : `maxDuration` de la route doublé (60→120s) car elle fait désormais 2 appels Anthropic séquentiels.
+
+**Restent à faire** (Epic 2) : Story 2.3 (détail pédagogique dépliable par dimension) et Story 2.4 (bascule Réponses/Analyse — déjà largement construite en 2.1, cette story sera surtout une vérification). **Décision de la PM : les fusionner en une seule story/implémentation** pour limiter le coût (voir §14).
+
+## 14. Décision sur le coût en tokens de la revue
+
+En cours de session, la PM a demandé à limiter la dépense de tokens (objectif : construire toute l'app dans l'après-midi) sans sacrifier la qualité. Constat partagé : le poste dominant est le sous-agent d'implémentation (~100-145k tokens/story), pas la revue — passer de 3 lentilles de revue à 1 seule (Edge Case Hunter) économise ~40% du coût de revue (~250k → ~85k) mais ne change rien au poste principal. Décisions prises :
+- Revue à une seule lentille (Edge Case Hunter) sur toutes les stories depuis la 1.3.
+- Fusionner les stories 2.3 et 2.4 (légères, étroitement liées) en un seul spec/sous-agent/revue plutôt que de payer deux fois les frais fixes.
+
+## 15. Prochaine étape
+
+Écrire et implémenter un spec combiné Story 2.3 + 2.4 (détail pédagogique dépliable + bascule Réponses/Analyse), sur une branche dédiée, revue à une lentille, PR à ouvrir manuellement (lien GitHub, `gh` non authentifié). Une fois mergée, l'Epic 2 — et le POC complet côté mécanique — sera terminé.
