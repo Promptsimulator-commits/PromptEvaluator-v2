@@ -286,6 +286,27 @@
   .status-clair { background: var(--good-soft); color: var(--good); }
   .status-tres-clair { background: var(--good); color: var(--surface); }
   .dim p { font-size: 13.5px; color: var(--ink-muted); margin: 0; }
+  .global-note {
+    text-align: center;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .global-note .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 4px;
+  }
+  .global-note .value {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 40px;
+    color: var(--ink);
+  }
+  .global-note .value small { font-size: 20px; color: var(--ink-muted); font-weight: 400; }
 
   /* Architecture */
   pre.mermaid {
@@ -394,13 +415,17 @@
         <ul class="crit-list" style="margin-bottom:18px;">
           <li>Le destinataire (clients existants) est mentionné</li>
         </ul>
-        <p style="font-size:13px; color:var(--ink-muted); margin:0;">Trois critères de base — orthographe/grammaire, cohérence, langue — sont aussi vérifiés en arrière-plan sur les 5 réponses générées, sans jamais s'afficher : ils n'apparaissent que si l'un d'eux échoue, dans l'explication d'une dimension.</p>
+        <p style="font-size:13px; color:var(--ink-muted); margin:0;">Trois critères de base — orthographe/grammaire, cohérence, langue — sont aussi vérifiés en arrière-plan sur les réponses générées, sans jamais s'afficher : ils n'apparaissent que si l'un d'eux échoue, dans l'explication d'une dimension.</p>
       </div>
     </div>
 
     <div class="example-frame">
       <div class="example-label">Analyse — même prompt, 5 réponses générées</div>
       <div class="example-body">
+        <div class="global-note">
+          <p class="label">Note globale</p>
+          <p class="value">4,7 <small>/ 10</small></p>
+        </div>
         <div class="dims">
           <div class="dim">
             <div class="dim-head"><span class="dim-name">Objectif</span><span class="status-pill status-clair">Clair — 7/10</span></div>
@@ -488,7 +513,7 @@ graph LR
   </section>
 
   <footer>
-    Prompt Evaluator — dossier de démo, préparé le 4 septembre 2026, mis à jour le 11 septembre 2026 (mécanique V2 : extraction automatique des critères, notation par 3 dimensions) · Sources : PRD et spine d'architecture du POC.
+    Prompt Evaluator — dossier de démo, préparé le 4 septembre 2026, mis à jour le 11 septembre 2026 (mécanique V2 : extraction automatique des critères, notation par 3 dimensions + note globale) · Sources : PRD et spine d'architecture du POC.
   </footer>
 
 </div>
