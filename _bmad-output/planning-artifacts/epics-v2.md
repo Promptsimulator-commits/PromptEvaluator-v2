@@ -81,6 +81,8 @@ L'utilisateur saisit un prompt et clique sur "Envoyer" : les critères sont extr
 Une fois les réponses générées, le prompt est noté sur 3 dimensions (Objectif, Contexte, Contraintes) à partir d'une lecture textuelle corrigée par la divergence observée entre les réponses, avec un détail pédagogique dépliable par dimension. Remplace l'ancien Épic 2 (analyse à 4 dimensions, action séparée).
 **FRs covered:** FR9, FR10
 
+**Ajout post-Épic 2 (2026-09-11)** : une **note globale** (moyenne simple des 3 notes de dimension, arrondie à 1 décimale) a été ajoutée au-dessus des 3 cartes, sur demande explicite de la PM — voir `spec-ajouter-note-globale.md`. Elle réintroduit partiellement un concept abandonné pendant la conception UX (la moyenne globale du document de départ V1), mais **sans** le "point faible" mis en avant : les 3 cartes restent visuellement identiques entre elles.
+
 ## Epic 1: Envoyer un prompt — extraction des critères et génération de N réponses
 
 ### Story 1.1: Initialiser et déployer le projet

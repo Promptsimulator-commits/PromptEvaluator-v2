@@ -167,6 +167,42 @@ En cours de session, la PM a demandé à limiter la dépense de tokens (objectif
 - Revue à une seule lentille (Edge Case Hunter) sur toutes les stories depuis la 1.3.
 - Fusionner les stories 2.3 et 2.4 (légères, étroitement liées) en un seul spec/sous-agent/revue plutôt que de payer deux fois les frais fixes.
 
-## 15. Prochaine étape
+## 15. Stories 2.3+2.4 (fusionnées) — Epic 2 clos
 
-Écrire et implémenter un spec combiné Story 2.3 + 2.4 (détail pédagogique dépliable + bascule Réponses/Analyse), sur une branche dédiée, revue à une lentille, PR à ouvrir manuellement (lien GitHub, `gh` non authentifié). Une fois mergée, l'Epic 2 — et le POC complet côté mécanique — sera terminé.
+Comme prévu en §14, 2.3 (détail dépliable) et 2.4 (bascule Réponses/Analyse) ont été fusionnées en une seule story/PR : 2.4 était déjà entièrement construite et vérifiée en Story 2.1, cette story n'a donc eu qu'à ajouter le vrai travail neuf — chaque carte de dimension se déplie/replie indépendamment (pas d'accordéon), affichant `explanation` + `rewriteSuggestion` toujours, et `correctionDetail` seulement si `correctionApplied`. Revue à une lentille (Edge Case Hunter), les 3 signalements réfutés (noms de dimension contraints par un contrat fixe déjà validé côté serveur ; forme du champ `explanation` déjà établie, hors scope de cette story). **Epic 2 terminé — la mécanique V2 complète (extraction, génération, notation en arrière-plan, notation par dimension avec correction comportementale, pédagogie dépliable) est construite de bout en bout.**
+
+## 16. Test complet de l'app (bout en bout, appels IA réels)
+
+Un test manuel complet a été mené sur le flux réel : prompt → extraction → 4 critères → génération (N=3) → notation en arrière-plan (invisible) → analyse automatique (Objectif 9/10, Contexte 4/10, Contraintes 8/10) → dépliage indépendant des 3 cartes → correction comportementale détectée et pertinente sur Contexte (une réponse formelle vs. deux décontractées) → bascule Réponses/Analyse sans appel réseau → "Annuler" restaure le prompt intact. Réseau : exactement 1 extraction + N exécutions + N notations + 1 analyse par test, tout en 200 OK. Aucune erreur console applicative. **Le POC fonctionne comme prévu, aucun correctif nécessaire suite à ce test.**
+
+Point d'outillage à connaître pour les sessions futures : `preview_start` (nom "dev") a démarré à plusieurs reprises le mauvais projet (le dépôt V1 voisin, `Prompt evaluator` sans `-v2`, sur le port 3000) au lieu de celui-ci. Contournement fiable : lancer `npm run dev -- -p 3100` directement via Bash dans ce répertoire, puis naviguer vers `http://localhost:3100`.
+
+## 17. Ajout hors-epic : note globale (moyenne des 3 dimensions)
+
+Sur demande explicite de la PM après le test complet, une **note globale** (moyenne simple des 3 notes de dimension, arrondie à 1 décimale, même typographie que l'ancienne "Note finale" V1) a été ajoutée au-dessus des 3 cartes. Ceci **réintroduit partiellement** une décision prise pendant la conception UX (§10, point 1) qui avait explicitement abandonné le concept de moyenne globale — mais **pas** le "point faible" qui l'accompagnait à l'origine : aucune dimension n'est mise en avant, la note globale est un chiffre neutre. Un vrai bug trouvé en revue (`minimumFractionDigits` manquant, "6" au lieu de "6,0") a été corrigé. Documentation mise à jour en conséquence : `epics-v2.md`, `EXPERIENCE.md`, `DESIGN.md` (qui note aussi que l'`[ASSUMPTION]` sur le palier "Très clair" est désormais résolue, confirmée par l'usage réel depuis la Story 2.1).
+
+## 18. Déploiement Vercel
+
+L'app a été déployée en production sur `https://prompt-evaluator-v2-eight.vercel.app` (`vercel --prod`, CLI déjà authentifié en `promptsimulator-commits`) à deux reprises : une première fois après l'Epic 2 complet, une seconde après l'ajout de la note globale. Les deux déploiements ont été vérifiés en ligne (mécanique V2 complète, note globale visible, aucune erreur).
+
+## 19. Décision sur le transfert du dépôt V2 vers l'organisation du cabinet
+
+La PM souhaite qu'un collègue puisse un jour importer le dépôt V2 dans l'organisation GitHub `swoodpartners` (celle qui héberge V1). Tentative de créer un dépôt vide `swoodpartners/PromptEvaluator-v2` : **bloquée**, la PM n'a pas les droits de création de dépôt dans cette organisation (l'admin n'était pas disponible pour trancher). **Décision retenue** : garder le dépôt actuel (`Promptsimulator-commits/PromptEvaluator-v2`) **public** — confirmé via l'API GitHub sans authentification (`"private": false`) — et transmettre son URL à l'admin/collègue, qui pourra l'importer lui-même plus tard via *GitHub → New repository → Import a repository*, sans dépendre du compte personnel de la PM. Point d'attention communiqué à la PM : l'import ne recopie que l'historique Git, pas les métadonnées GitHub (discussions de PR) — sans impact ici puisque toute la documentation vit dans les fichiers du dépôt.
+
+## 20. Email de synthèse pour le responsable
+
+Un brouillon d'email (V1 vs V2, valeur ajoutée, liens des deux dépôts avec la note sur l'import possible du dépôt V2 public) a été rédigé pour que la PM le transmette elle-même à son responsable, avec les deux dossiers de démo à jour en pièces jointes (voir §21 pour leur mise à jour).
+
+## 21. Audit de cohérence documentaire (les deux dépôts)
+
+À la demande de la PM, un audit complet a été mené pour vérifier que toute la documentation (les deux dépôts) est bien migrée/à jour et sans contradiction :
+
+- **Vraie discrepancy trouvée et corrigée** : la branche `label-v1-docs` (bandeau "V1 — figée" + renommages `-v1`) existait sur le dépôt V1 depuis la conception initiale mais **n'avait jamais été mergée** sur `main` — contrairement à ce que ce journal affirmait au §7 ("Déjà fait"). Mergée et poussée dans cette session (commit `efa57e3`).
+- **Aucune contradiction trouvée côté V2** entre `CLAUDE.md`, `README.md`, `prd-v2.md`, `epics-v2.md`, `ARCHITECTURE-SPINE-v2.md`, `DESIGN.md`/`EXPERIENCE.md` — tous cohérents avec la mécanique actuelle.
+- **Dossier de démo V2** : mis à jour (exemple "Note globale" ajouté, référence codée en dur à "5 réponses" retirée) — voir §17. Dossier de démo V1 : déjà fidèle, rien à changer (V1 n'a pas bougé).
+- **Omissions mineures comblées dans cette même session** : mentions de la note globale ajoutées à `epics-v2.md`, `EXPERIENCE.md`, `DESIGN.md` (voir §17 et cette section) ; ce journal complété jusqu'ici.
+- **Dette technique déjà connue, non bloquante** : l'ancienne route `app/api/analyze` (V1, 4 dimensions) reste dans le code, inutilisée — déjà loggée dans `deferred-work.md`.
+
+## 22. Où en est le projet maintenant
+
+Le POC V2 est **fonctionnellement complet** (Epic 1 + Epic 2 + note globale), testé de bout en bout en local et en production, déployé sur Vercel, et sa documentation est cohérente sur les deux dépôts. Prochaines étapes possibles, aucune urgente : décision go/no-go du responsable (email en cours), import éventuel du dépôt V2 vers `swoodpartners` par un admin, nettoyage de la route `/api/analyze` morte, arbitrage des points ouverts de `deferred-work.md` (notamment la limite de longueur des prompts, récurrente sur plusieurs routes).
