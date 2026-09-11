@@ -50,8 +50,8 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: in-progress
-  2-1-calculer-et-afficher-la-note-par-dimension-à-partir-du-signal-textuel: review
-  2-2-appliquer-la-correction-comportementale-à-la-note: backlog
+  2-1-calculer-et-afficher-la-note-par-dimension-à-partir-du-signal-textuel: done
+  2-2-appliquer-la-correction-comportementale-à-la-note: review
   2-3-afficher-le-détail-pédagogique-dépliable-par-dimension: backlog
   2-4-basculer-entre-la-vue-réponses-et-la-vue-analyse: backlog
   epic-2-retrospective: optional

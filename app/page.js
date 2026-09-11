@@ -206,13 +206,14 @@ export default function Home() {
 
     setScoreResults(results);
 
-    // Phase 4 (Story 2.1) : analyse par dimensions, déclenchée automatiquement
+    // Phase 4 (Story 2.2) : analyse par dimensions, déclenchée automatiquement
     // dès que la notation (phase 3) se termine avec succès — jamais au clic
-    // sur la bascule Réponses/Analyse. Contexte neuf (AD-3) : seul le prompt
-    // est envoyé, scoreResults n'est ni envoyé ni utilisé dans cette story.
+    // sur la bascule Réponses/Analyse. Contexte neuf (AD-3) : responses et
+    // scoreResults alimentent la correction comportementale (AD-4b) ; à N=1
+    // ils ne permettent aucune correction, mais sont envoyés quand même.
     const { ok: analysisOk, data: analysisData } = await callApi(
       "/api/analyze-dimensions",
-      { prompt }
+      { prompt, responses: generatedRuns, scoreResults: results }
     );
 
     if (!analysisOk || !Array.isArray(analysisData?.dimensions)) {
