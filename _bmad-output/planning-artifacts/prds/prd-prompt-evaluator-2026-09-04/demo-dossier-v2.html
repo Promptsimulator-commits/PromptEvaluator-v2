@@ -282,8 +282,9 @@
     border-radius: 20px;
   }
   .status-absent { background: var(--bad-soft); color: var(--bad); }
-  .status-present { background: var(--accent-soft); color: var(--accent-ink); }
+  .status-a-clarifier { background: var(--accent-soft); color: var(--accent-ink); }
   .status-clair { background: var(--good-soft); color: var(--good); }
+  .status-tres-clair { background: var(--good); color: var(--surface); }
   .dim p { font-size: 13.5px; color: var(--ink-muted); margin: 0; }
 
   /* Architecture */
@@ -365,17 +366,17 @@
 
   <section>
     <p class="eyebrow">Comment ça marche</p>
-    <h2>Deux gestes, une boucle d'entraînement</h2>
+    <h2>Un seul geste, deux temps</h2>
     <div class="two-col" style="margin-top:20px;">
       <div class="card">
-        <p class="num">Fonctionnalité 1</p>
-        <h3>Évaluer par la preuve</h3>
-        <p>Le consultant écrit un prompt et ses critères d'acceptance. L'app l'exécute 5 fois, note chaque résultat sur ces critères, et calcule une moyenne — en révélant si le prompt est fiable ou seulement chanceux une fois sur cinq.</p>
+        <p class="num">Temps 1</p>
+        <h3>Envoyer, sans deviner quoi taper</h3>
+        <p>Le consultant écrit son prompt et clique sur "Envoyer" — un seul bouton. L'app extrait elle-même les critères vérifiables du texte, les affiche pour relecture, puis exécute le prompt plusieurs fois pour observer sa fiabilité.</p>
       </div>
       <div class="card">
-        <p class="num">Fonctionnalité 2</p>
+        <p class="num">Temps 2</p>
         <h3>Comprendre pour progresser</h3>
-        <p>À tout moment, l'app analyse le prompt sur 4 dimensions du métier — persona, objectif, contraintes, exemples — et indique précisément ce qui manque, avec un exemple concret d'amélioration.</p>
+        <p>Le prompt est noté sur 3 dimensions du métier — objectif, contexte, contraintes — à partir de sa formulation, corrigée si les réponses générées divergent entre elles. Chaque dimension explique ce qui est clair, ce qui reste à préciser, et propose une reformulation concrète.</p>
       </div>
     </div>
   </section>
@@ -386,74 +387,32 @@
     <p style="margin-bottom:20px;">Illustration avec un prompt type — pas une donnée réelle de démo, un exemple pour montrer le format.</p>
 
     <div class="example-frame" style="margin-bottom:16px;">
-      <div class="example-label">Prompt testé</div>
+      <div class="example-label">Prompt envoyé</div>
       <div class="example-body">
         <div class="prompt-box">« Rédige un email pour annoncer notre nouvelle fonctionnalité aux clients. »</div>
-        <ul class="crit-list">
+        <p style="font-size:13px; color:var(--ink-muted); margin:0 0 10px;">Critères repérés automatiquement dans le texte (liste éditable avant de lancer) :</p>
+        <ul class="crit-list" style="margin-bottom:18px;">
           <li>Le destinataire (clients existants) est mentionné</li>
-          <li>Le ton est professionnel et accessible</li>
-          <li>La longueur est de 3 à 5 lignes</li>
         </ul>
-
-        <table class="scores">
-          <thead><tr><th>Exécution</th><th>Score /10</th></tr></thead>
-          <tbody>
-            <tr><td>1</td><td class="num-cell">7,5</td></tr>
-            <tr><td>2</td><td class="num-cell">10,0</td></tr>
-            <tr><td>3</td><td class="num-cell">5,0</td></tr>
-            <tr><td>4</td><td class="num-cell">7,5</td></tr>
-            <tr><td>5</td><td class="num-cell">10,0</td></tr>
-            <tr class="avg-row"><td>Moyenne</td><td class="num-cell">8,0</td></tr>
-          </tbody>
-        </table>
-
-        <table class="scores" style="margin-bottom:0;">
-          <thead><tr><th>Critère</th><th>Stabilité</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Destinataire mentionné</td>
-              <td><span class="num-cell">3/5</span><span class="stability-bar">
-                <span class="on"></span><span class="on"></span><span class="on"></span><span class="off"></span><span class="off"></span>
-              </span></td>
-            </tr>
-            <tr>
-              <td>Ton professionnel</td>
-              <td><span class="num-cell">5/5</span><span class="stability-bar">
-                <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span>
-              </span></td>
-            </tr>
-            <tr>
-              <td>Longueur 3–5 lignes</td>
-              <td><span class="num-cell">4/5</span><span class="stability-bar">
-                <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="off"></span>
-              </span></td>
-            </tr>
-          </tbody>
-        </table>
-        <p style="font-size:13px; color:var(--ink-muted); margin:0 0 8px;">Même un prompt bien écrit ne garantit pas un résultat identique à chaque fois — l'IA ne suit pas ses propres instructions avec une fiabilité de 100 %. C'est cette fiabilité réelle, run après run, que les 5 exécutions mesurent.</p>
-        <p style="font-size:13px; color:var(--ink-muted); margin:0;">Pour un critère de longueur comme celui-ci, la notation ne se fie pas à l'impression de lecture d'une IA — peu fiable pour compter — mais à un nombre de mots calculé objectivement et fourni au juge, pour un verdict plus fiable.</p>
+        <p style="font-size:13px; color:var(--ink-muted); margin:0;">Trois critères de base — orthographe/grammaire, cohérence, langue — sont aussi vérifiés en arrière-plan sur les 5 réponses générées, sans jamais s'afficher : ils n'apparaissent que si l'un d'eux échoue, dans l'explication d'une dimension.</p>
       </div>
     </div>
 
     <div class="example-frame">
-      <div class="example-label">Analyse — même prompt</div>
+      <div class="example-label">Analyse — même prompt, 5 réponses générées</div>
       <div class="example-body">
         <div class="dims">
           <div class="dim">
-            <div class="dim-head"><span class="dim-name">Persona</span><span class="status-pill status-absent">Absent</span></div>
-            <p>Aucun rôle n'est donné à l'IA. Ex. : « Tu es chargé de communication client ».</p>
+            <div class="dim-head"><span class="dim-name">Objectif</span><span class="status-pill status-clair">Clair — 7/10</span></div>
+            <p>Annoncer une nouvelle fonctionnalité aux clients — sans ambiguïté sur la tâche.</p>
           </div>
           <div class="dim">
-            <div class="dim-head"><span class="dim-name">Objectif</span><span class="status-pill status-clair">Clair</span></div>
-            <p>Annoncer une nouvelle fonctionnalité aux clients — sans ambiguïté.</p>
+            <div class="dim-head"><span class="dim-name">Contexte</span><span class="status-pill status-a-clarifier">À clarifier — 4/10</span></div>
+            <p>Le destinataire est nommé, mais aucun ton attendu n'est précisé. Ex. : « …aux clients existants, sur un ton professionnel et enthousiaste ».</p>
           </div>
           <div class="dim">
-            <div class="dim-head"><span class="dim-name">Contraintes</span><span class="status-pill status-absent">Absent</span></div>
-            <p>Ton et longueur comptent parmi vos critères mais ne sont pas demandés dans le prompt — les rendre explicites réduit le risque que l'IA les traite au hasard.</p>
-          </div>
-          <div class="dim">
-            <div class="dim-head"><span class="dim-name">Exemples</span><span class="status-pill status-absent">Absent</span></div>
-            <p>Aucun exemple de bon email fourni pour cadrer le style attendu.</p>
+            <div class="dim-head"><span class="dim-name">Contraintes</span><span class="status-pill status-a-clarifier">À clarifier — 3/10</span></div>
+            <p>Aucune longueur ni format demandé dans le prompt. Correction appliquée : 3 réponses sur 5 dépassaient largement les autres en longueur — le flou se voit dans les résultats, pas seulement dans le texte.</p>
           </div>
         </div>
       </div>
@@ -464,10 +423,10 @@
     <p class="eyebrow">Parcours</p>
     <h2>Julie, PM au cabinet</h2>
     <div class="journey">
-      <div class="step"><p><strong>Colle son prompt</strong> et ses critères d'acceptance — texte libre, comme dans son travail réel.</p></div>
-      <div class="step"><p><strong>Lance l'évaluation</strong> — 5 exécutions, score moyen, stabilité par critère.</p></div>
-      <div class="step"><p><strong>Demande l'analyse</strong> — 4 dimensions, ce qui manque et pourquoi.</p></div>
-      <div class="step"><p><strong>Réécrit et relance</strong> — vérifie objectivement le progrès.</p></div>
+      <div class="step"><p><strong>Colle son prompt</strong> et clique sur "Envoyer" — texte libre, comme dans son travail réel.</p></div>
+      <div class="step"><p><strong>Valide les critères extraits</strong> automatiquement, ajuste si besoin, lance la génération.</p></div>
+      <div class="step"><p><strong>Consulte l'analyse</strong> — 3 dimensions, ce qui est clair, ce qui manque, et pourquoi.</p></div>
+      <div class="step"><p><strong>Réécrit et renvoie</strong> — vérifie objectivement le progrès.</p></div>
     </div>
   </section>
 
@@ -476,14 +435,16 @@
     <h2>Simple, sécurisé, vérifiable en 3 jours</h2>
     <pre class="mermaid">
 graph LR
-  A["Navigateur — Next.js App Router"] -->|JSON| B["/api/execute"]
+  A["Navigateur — Next.js App Router"] -->|JSON| X["/api/extract-criteria"]
+  A -->|JSON| B["/api/execute"]
   A -->|JSON| C["/api/score"]
-  A -->|JSON| D["/api/analyze"]
-  B --> E[("Claude Haiku — API Anthropic")]
+  A -->|JSON| D["/api/analyze-dimensions"]
+  X --> E[("Claude Haiku — API Anthropic")]
+  B --> E
   C --> E
   D --> E
     </pre>
-    <p style="margin-bottom:12px;">La clé API n'est jamais exposée au navigateur : chaque appel au LLM passe par une route serveur. Aucune exécution ne réutilise le contexte d'une autre — les 5 mesures sont indépendantes.</p>
+    <p style="margin-bottom:12px;">La clé API n'est jamais exposée au navigateur : chaque appel au LLM passe par une route serveur. Aucune exécution ne réutilise le contexte d'une autre — les N mesures sont indépendantes.</p>
     <div class="chips">
       <span class="chip">Next.js 16.3</span>
       <span class="chip">Tailwind CSS 4.3.3</span>
@@ -498,7 +459,7 @@ graph LR
     <h2>Ce que ce pilote couvre — et ce qu'il exclut sciemment</h2>
     <div class="facts" style="margin-bottom:18px;">
       <div class="fact"><div class="label">Délai</div><div class="value">3 jours</div></div>
-      <div class="fact"><div class="label">Exécutions</div><div class="value">N = 5, fixe</div></div>
+      <div class="fact"><div class="label">Exécutions</div><div class="value">N réglable, 1 à 10 (défaut 5)</div></div>
       <div class="fact"><div class="label">Budget API</div><div class="value">~10–20 €</div></div>
       <div class="fact"><div class="label">Fournisseur</div><div class="value">Anthropic seul</div></div>
       <div class="fact"><div class="label">Comptes</div><div class="value">Aucun — URL publique, sans login</div></div>
@@ -508,7 +469,7 @@ graph LR
     <ul class="plain">
       <li>Connexion et multi-utilisateurs — nécessaire seulement si le déploiement aux 30 consultants est validé</li>
       <li>Module e-learning théorique — chantier séparé, dans une autre application</li>
-      <li>Nombre d'exécutions configurable, choix du modèle, autres fournisseurs LLM</li>
+      <li>Choix du modèle "réel" des consultants, autres fournisseurs LLM</li>
     </ul>
   </section>
 
@@ -527,7 +488,7 @@ graph LR
   </section>
 
   <footer>
-    Prompt Evaluator — dossier de démo, préparé le 4 septembre 2026 · Sources : PRD et spine d'architecture du POC.
+    Prompt Evaluator — dossier de démo, préparé le 4 septembre 2026, mis à jour le 11 septembre 2026 (mécanique V2 : extraction automatique des critères, notation par 3 dimensions) · Sources : PRD et spine d'architecture du POC.
   </footer>
 
 </div>

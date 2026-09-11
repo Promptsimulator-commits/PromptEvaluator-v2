@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mock — Vue Analyse par dimensions</title>
+<style>
+  :root {
+    --background: #fdf6e9;
+    --foreground: #241528;
+    --card: #ffffff;
+    --primary: #851f6b;
+    --accent: #d99a2b;
+    --border: #ecd9b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Geist Sans', system-ui, sans-serif;
+    padding: 3rem 1.5rem;
+  }
+  .col { max-width: 768px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .toggle-row { display: flex; justify-content: flex-end; }
+  .btn-toggle {
+    background: transparent;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+    border-radius: 9999px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .dims { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } }
+  .dim-card {
+    background: var(--card);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(36,21,40,0.06);
+    padding: 1.1rem;
+    cursor: pointer;
+  }
+  .dim-name { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 0.95rem; margin: 0 0 0.5rem; }
+  .dim-score-row { display: flex; align-items: center; gap: 0.6rem; }
+  .dim-score { font-family: 'Geist Mono', monospace; font-size: 1.1rem; }
+  .pill {
+    display: inline-flex;
+    border-radius: 9999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .pill-a-clarifier { background: rgba(217,154,43,0.15); color: var(--accent); }
+  .pill-clair { background: rgba(133,31,107,0.15); color: var(--primary); }
+  .pill-tres-clair { background: rgba(133,31,107,0.3); color: var(--primary); }
+  .dim-detail {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .dim-detail p { margin: 0 0 0.6rem; }
+  .dim-detail .label { font-weight: 600; }
+  .rewrite-box {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+  }
+  .correction-note {
+    font-size: 0.8rem;
+    color: rgba(36,21,40,0.75);
+    background: rgba(217,154,43,0.1);
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    margin-top: 0.6rem;
+  }
+  .note { font-size: 0.8rem; color: rgba(36,21,40,0.6); margin-top: 1.5rem; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="toggle-row">
+      <button class="btn-toggle">Voir les réponses</button>
+    </div>
+
+    <div class="dims">
+      <div class="dim-card">
+        <p class="dim-name">Objectif</p>
+        <div class="dim-score-row">
+          <span class="dim-score">8 / 10</span>
+          <span class="pill pill-clair">Clair</span>
+        </div>
+      </div>
+
+      <div class="dim-card">
+        <p class="dim-name">Contexte</p>
+        <div class="dim-score-row">
+          <span class="dim-score">9 / 10</span>
+          <span class="pill pill-tres-clair">Très clair</span>
+        </div>
+      </div>
+
+      <div class="dim-card" aria-expanded="true">
+        <p class="dim-name">Contraintes</p>
+        <div class="dim-score-row">
+          <span class="dim-score">6 / 10</span>
+          <span class="pill pill-clair">Clair</span>
+        </div>
+        <div class="dim-detail">
+          <p><span class="label">Bien fait :</span> tu donnes une limite de longueur précise ("moins de 160 caractères") — un axe quantifié clairement.</p>
+          <p><span class="label">À améliorer :</span> aucune consigne de ton n'était donnée dans le prompt lui-même (ajoutée seulement comme critère extrait).</p>
+          <p><span class="label">Reformulation suggérée :</span></p>
+          <div class="rewrite-box">"…en moins de 160 caractères, sur un ton professionnel et formel."</div>
+          <div class="correction-note">Note corrigée : 2 réponses sur 5 dépassaient la longueur demandée.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">Mock statique — illustre EXPERIENCE.md § Component Patterns (3 colonnes, carte Contraintes dépliée avec correction comportementale nommée). Pas de logique fonctionnelle.</p>
+  </div>
+</body>
+</html>

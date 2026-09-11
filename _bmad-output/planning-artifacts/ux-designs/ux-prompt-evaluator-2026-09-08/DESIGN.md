@@ -1,8 +1,8 @@
 ---
 name: Prompt Evaluator
 status: final
-updated: 2026-09-08
-description: Single-screen tool for consultants to test and diagnose prompts against acceptance criteria. Next.js App Router + Tailwind CSS v4, no component library — hand-styled with CSS custom properties as design tokens.
+updated: 2026-09-11
+description: Single-screen tool for consultants to test a prompt — criteria are extracted automatically from the prompt text (not typed by hand), then scored across 3 dimensions (Objectif/Contexte/Contraintes) via a textual reading corrected by response divergence. Next.js App Router + Tailwind CSS v4, no component library — hand-styled with CSS custom properties as design tokens.
 colors:
   background: '#fdf6e9'
   foreground: '#241528'
@@ -80,7 +80,7 @@ No dark mode exists today (static light theme only) — a known gap for this POC
 
 ## Layout & Spacing
 
-Single column, `max-w-3xl` (768px), generous vertical rhythm (`gap-6` between major blocks). One elevated card holds the whole input form; results render as separate cards below it in the same column. Exception: the analysis's 4 dimension cards render `sm:grid-cols-2` (two-column) on `sm+` viewports — the only place in the app where content sits side-by-side, because the 4 dimensions are a fixed, comparable set meant to be scanned together, unlike the sequential form-then-results flow everywhere else.
+Single column, `max-w-3xl` (768px), generous vertical rhythm (`gap-6` between major blocks). One elevated card holds the prompt input; the criteria list (extracted, editable) opens inline beneath it on confirmation, in the same column. Exception: the 3 dimension cards (Objectif, Contexte, Contraintes) render `sm:grid-cols-3` (three equal columns, one row) on `sm+` viewports — the only place in the app where content sits side-by-side, because the 3 dimensions are a fixed, comparable set meant to be scanned together, unlike the sequential form-then-results flow everywhere else. (Was a `sm:grid-cols-2` 2×2 grid for 4 dimensions before the V2 mechanic dropped "Exemples" as a standalone dimension — a 3-column single row replaces the 2×2 to avoid an unbalanced 2+1 layout.)
 
 ## Elevation & Depth
 
@@ -95,10 +95,12 @@ Three roles, never mixed:
 
 ## Components
 
-- **Primary button ("Évaluer")** — filled `{colors.primary}`, white text, pill. The dominant action.
-- **Secondary button ("Analyser")** — outlined `{colors.primary}`, pill. Visually subordinate to "Évaluer" but not diminished — both are legitimate entry points, only one has less visual weight by convention (filled = "the one most people do first").
-- **Chip** — pill, accent-tinted, monospace — used for the criteria count and run count. The per-criterion stability ratio uses the same monospace/accent treatment but is *not* pill-shaped (plain text, no fill or padding) — a smaller, denser readout repeated once per criterion rather than a single summary count.
-- **Status pill (analysis dimensions)** — `absent` (muted foreground tint), `présent` (accent tint), `clair` (primary tint) — a 3-step scale from "nothing" to "best," using the same accent/primary vocabulary as everywhere else rather than a separate traffic-light palette.
+- **Primary button ("Envoyer")** — filled `{colors.primary}`, white text, pill. The single business action: extraction → validation → generation → scoring, one flow, one button. There is no longer a second business action that re-triggers a call — "Analyser" was retired as its own action (see `EXPERIENCE.md.Foundation`).
+- **Secondary button ("Confirmer et lancer")** — outlined `{colors.primary}`, pill. Appears inline once the extracted-criteria list is showing; confirms the (possibly edited) list and starts generation.
+- **Tertiary/ghost button ("Annuler")** — plain text, `{colors.foreground}/70`, no border or fill — sits beside "Confirmer et lancer," closes the criteria list and returns to editing the prompt. Deliberately the quietest control on the row: it's an escape hatch, not a competing action.
+- **View toggle ("Voir l'analyse" / "Voir les réponses")** — outlined `{colors.primary}`, pill, same visual family as a secondary button but behaves as a pure display switch (no new API call) between the "Réponses générées" and "Analyse par dimensions" views once results exist. Only one of the two labels is shown at a time (whichever view is *not* currently active).
+- **Chip** — pill, accent-tinted, monospace — used for the (single, extracted-only) criteria count and run count. The per-criterion stability ratio uses the same monospace/accent treatment but is *not* pill-shaped (plain text, no fill or padding) — a smaller, denser readout repeated once per criterion rather than a single summary count.
+- **Status pill (dimension score)** — 4-step scale, `Absent` (muted `foreground/10` tint) → `À clarifier` (accent `/15` tint) → `Clair` (primary `/15` tint) → `Très clair` (primary `/30` tint, same hue one step darker/denser). Deliberately reuses the existing two hues (accent, primary) rather than introducing a third color for the added step — consistent with "plum/magenta as the only strong color" (see Do's and Don'ts). **[ASSUMPTION — flag to PM]** the `Très clair` treatment (primary/30 vs. primary/15) is a proposed extrapolation of the existing 3-step convention, not something explicitly decided in conversation; confirm it reads as clearly "one step up" from `Clair` before shipping, or pick a different differentiator (e.g. a filled pill instead of a deeper tint).
 
 ## Do's and Don'ts
 
