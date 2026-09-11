@@ -49,9 +49,9 @@ development_status:
   1-5-noter-chaque-réponse-en-arrière-plan-pour-mesurer-la-divergence: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-calculer-et-afficher-la-note-par-dimension-à-partir-du-signal-textuel: done
-  2-2-appliquer-la-correction-comportementale-à-la-note: review
-  2-3-afficher-le-détail-pédagogique-dépliable-par-dimension: backlog
-  2-4-basculer-entre-la-vue-réponses-et-la-vue-analyse: backlog
+  2-2-appliquer-la-correction-comportementale-à-la-note: done
+  2-3-afficher-le-détail-pédagogique-dépliable-par-dimension: done
+  2-4-basculer-entre-la-vue-réponses-et-la-vue-analyse: done
   epic-2-retrospective: optional

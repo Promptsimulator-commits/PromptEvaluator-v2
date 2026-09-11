@@ -51,6 +51,10 @@ export default function Home() {
   // Vue affichée après génération : "reponses" par défaut, bascule possible
   // sans appel réseau une fois l'analyse prête.
   const [activeView, setActiveView] = useState("reponses");
+  // Détail dépliable par dimension (Story 2.3) : Set des noms de dimension
+  // actuellement dépliées. Chaque carte se déplie/replie indépendamment des
+  // autres — pas d'accordéon exclusif.
+  const [expandedDimensions, setExpandedDimensions] = useState(new Set());
 
   const DIMENSION_LABELS = {
     objectif: "Objectif",
@@ -229,7 +233,22 @@ export default function Home() {
     }
 
     setDimensions(analysisData.dimensions);
+    setExpandedDimensions(new Set());
     setIsGenerating(false);
+  }
+
+  // Ouvre/ferme le détail d'une dimension sans affecter les autres (pas
+  // d'accordéon exclusif) : chaque carte garde son propre état.
+  function toggleDimensionExpanded(name) {
+    setExpandedDimensions((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
   }
 
   // Referme la liste et restaure l'état de saisie initial : le prompt reste
@@ -247,6 +266,7 @@ export default function Home() {
     setDimensions(null);
     setAnalysisError(null);
     setActiveView("reponses");
+    setExpandedDimensions(new Set());
   }
 
   return (
@@ -567,29 +587,91 @@ export default function Home() {
                   </h2>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    {dimensions.map((dimension) => (
-                      <div
-                        key={dimension.name}
-                        className="rounded-xl border border-border bg-background p-4"
-                      >
-                        <p className="mb-2 font-display text-sm font-medium text-foreground">
-                          {DIMENSION_LABELS[dimension.name] ?? dimension.name}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-lg text-foreground">
-                            {dimension.note} / 10
-                          </span>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              PALIER_PILL_CLASSES[dimension.palier] ??
-                              "bg-foreground/10 text-foreground/60"
-                            }`}
+                    {dimensions.map((dimension) => {
+                      const isExpanded = expandedDimensions.has(
+                        dimension.name
+                      );
+                      const headerId = `dimension-header-${dimension.name}`;
+                      const panelId = `dimension-panel-${dimension.name}`;
+                      return (
+                        <div
+                          key={dimension.name}
+                          className="rounded-xl border border-border bg-background p-4"
+                        >
+                          <button
+                            type="button"
+                            id={headerId}
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            onClick={() =>
+                              toggleDimensionExpanded(dimension.name)
+                            }
+                            className="flex w-full flex-col gap-2 text-left"
                           >
-                            {PALIER_LABELS[dimension.palier] ?? dimension.palier}
-                          </span>
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="font-display text-sm font-medium text-foreground">
+                                {DIMENSION_LABELS[dimension.name] ??
+                                  dimension.name}
+                              </span>
+                              <span
+                                aria-hidden="true"
+                                className={`text-foreground/40 transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              >
+                                ▾
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <span className="font-mono text-lg text-foreground">
+                                {dimension.note} / 10
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  PALIER_PILL_CLASSES[dimension.palier] ??
+                                  "bg-foreground/10 text-foreground/60"
+                                }`}
+                              >
+                                {PALIER_LABELS[dimension.palier] ??
+                                  dimension.palier}
+                              </span>
+                            </span>
+                          </button>
+
+                          {isExpanded && (
+                            <div
+                              id={panelId}
+                              role="region"
+                              aria-labelledby={headerId}
+                              className="mt-3 flex flex-col gap-3 border-t border-border pt-3"
+                            >
+                              <p className="whitespace-pre-wrap text-sm text-foreground/80">
+                                {dimension.explanation}
+                              </p>
+                              <div>
+                                <p className="mb-1 font-mono text-xs font-medium text-foreground/50">
+                                  Reformulation suggérée
+                                </p>
+                                <p className="whitespace-pre-wrap text-sm text-foreground">
+                                  {dimension.rewriteSuggestion}
+                                </p>
+                              </div>
+                              {dimension.correctionApplied &&
+                                dimension.correctionDetail && (
+                                  <div className="rounded-lg bg-primary/5 p-3">
+                                    <p className="mb-1 font-mono text-xs font-medium text-primary/70">
+                                      Correction observée
+                                    </p>
+                                    <p className="whitespace-pre-wrap text-sm text-foreground">
+                                      {dimension.correctionDetail}
+                                    </p>
+                                  </div>
+                                )}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               )}
