@@ -36,6 +36,11 @@ export default function Home() {
   // true une fois "Confirmer et lancer" cliqué : la liste devient lecture
   // seule jusqu'au prochain "Envoyer" (nouvelle extraction).
   const [isConfirmed, setIsConfirmed] = useState(false);
+  // Génération des N réponses (Story 1.4).
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [runs, setRuns] = useState([]);
+  const [totalRuns, setTotalRuns] = useState(0);
+  const [generationError, setGenerationError] = useState(null);
 
   const shouldFocusNewRow = useRef(false);
   const criterionInputRefs = useRef([]);
@@ -96,9 +101,45 @@ export default function Home() {
     (criterion) => criterion.trim().length === 0
   );
 
-  function handleConfirm() {
+  // Boucle séquentielle sur /api/execute (FR3, FR3b) : N est figé dès l'entrée
+  // dans la fonction (valeur de runCount au moment du clic), donc un
+  // déplacement ultérieur du curseur n'a aucun effet sur cette génération.
+  // Un seul échec abandonne tout le flux (NFR4) : aucune réponse partielle
+  // n'est conservée comme résultat final.
+  async function handleConfirm() {
     if (criteriaList.length === 0 || hasBlankCriterion) return;
+    // Garde de ré-entrance : le bouton disparaît une fois isConfirmed à true,
+    // mais on se protège quand même d'un second déclenchement concurrent.
+    if (isGenerating) return;
+
     setIsConfirmed(true);
+    setGenerationError(null);
+    setRuns([]);
+
+    const n = runCount;
+    setTotalRuns(n);
+    setIsGenerating(true);
+
+    for (let i = 0; i < n; i++) {
+      // Contexte neuf à chaque appel (AD-3) : pas d'historique partagé entre
+      // les exécutions, chaque appel repart uniquement du prompt d'origine.
+      const { ok, data } = await callApi("/api/execute", { prompt });
+
+      if (!ok || typeof data?.output !== "string" || data.output.length === 0) {
+        const reason =
+          data?.error ?? "Erreur inattendue lors de l'appel à l'IA.";
+        setGenerationError(
+          `Échec de l'exécution ${i + 1}/${n} : ${reason}`
+        );
+        setRuns([]);
+        setIsGenerating(false);
+        return;
+      }
+
+      setRuns((prev) => [...prev, data.output]);
+    }
+
+    setIsGenerating(false);
   }
 
   // Referme la liste et restaure l'état de saisie initial : le prompt reste
@@ -108,6 +149,10 @@ export default function Home() {
     setCriteriaList([]);
     setIsConfirmed(false);
     setExtractionError(null);
+    setIsGenerating(false);
+    setRuns([]);
+    setTotalRuns(0);
+    setGenerationError(null);
   }
 
   return (
@@ -172,7 +217,7 @@ export default function Home() {
               max={MAX_RUNS}
               step={1}
               value={runCount}
-              disabled={isExtracting}
+              disabled={isExtracting || isGenerating}
               onChange={(e) => setRunCount(Number(e.target.value))}
               className="w-full accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
             />
@@ -277,12 +322,26 @@ export default function Home() {
             </div>
 
             {isConfirmed ? (
-              <p
-                aria-live="polite"
-                className="font-mono text-xs text-foreground/60"
-              >
-                Liste confirmée — prêt pour la génération (à venir).
-              </p>
+              <>
+                {isGenerating && (
+                  <p
+                    aria-live="polite"
+                    className="font-mono text-xs text-foreground/60"
+                  >
+                    exécution {runs.length + 1}/{totalRuns}
+                  </p>
+                )}
+                {!isGenerating && !generationError && runs.length > 0 && (
+                  <p
+                    aria-live="polite"
+                    className="font-mono text-xs text-foreground/60"
+                  >
+                    Liste confirmée — {totalRuns} exécution
+                    {totalRuns > 1 ? "s" : ""} terminée
+                    {totalRuns > 1 ? "s" : ""}.
+                  </p>
+                )}
+              </>
             ) : (
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -302,6 +361,50 @@ export default function Home() {
                 </button>
               </div>
             )}
+          </section>
+        )}
+
+        {generationError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-primary"
+          >
+            {generationError}
+          </div>
+        )}
+
+        {isConfirmed && !generationError && runs.length > 0 && (
+          <section
+            aria-labelledby="runs-heading"
+            className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h2
+                id="runs-heading"
+                className="font-display text-2xl font-semibold tracking-tight text-foreground"
+              >
+                Réponses générées
+              </h2>
+              <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                {runs.length}/{totalRuns}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {runs.map((output, index) => (
+                <div
+                  key={index}
+                  className="rounded-xl border border-border p-4"
+                >
+                  <p className="mb-2 font-mono text-xs font-medium text-foreground/50">
+                    Exécution {index + 1}
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm text-foreground">
+                    {output}
+                  </p>
+                </div>
+              ))}
+            </div>
           </section>
         )}
       </main>
