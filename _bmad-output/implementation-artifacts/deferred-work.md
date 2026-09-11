@@ -42,6 +42,16 @@
 
 ## Deferred from: code review of fix-score-length-precision (2026-09-08)
 
+## Deferred from: code review of story 2.1, mécanique V2 (2026-09-11)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-1-noter-dimensions-signal-textuel.md`
+  summary: `/api/analyze-dimensions` has no max-length guard on `prompt` before the Anthropic call (only emptiness is checked).
+  evidence: Confirmed identical to the same pre-existing gap already logged above for `/api/execute`/`/api/score`/`/api/extract-criteria` — no length limit has been decided anywhere yet (NFR2 budget). Not unique to this story.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-1-noter-dimensions-signal-textuel.md`
+  summary: `app/api/analyze/route.js` (the old V1, 4-dimension route) is now fully dead code — `app/page.js` calls `/api/analyze-dimensions` instead since this story.
+  evidence: Confirmed unused by any client code. Out of this story's Code Map (which only lists `analyze-dimensions/route.js` as new). Safe to delete once confirmed nothing else references it — minor cleanup, no functional impact.
+
 ## Deferred from: code review of story 1.3, mécanique V2 (2026-09-11)
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-reviser-valider-criteres.md`

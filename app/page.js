@@ -44,6 +44,33 @@ export default function Home() {
   // Notation en arrière-plan des réponses générées (Story 1.5). Jamais rendu
   // dans le JSX — sert uniquement l'Épic 2 (notation par dimension) à venir.
   const [scoreResults, setScoreResults] = useState([]);
+  // Analyse par dimensions (Story 2.1, phase 4) : déclenchée automatiquement
+  // dès que la notation (phase 3) se termine avec succès.
+  const [dimensions, setDimensions] = useState(null);
+  const [analysisError, setAnalysisError] = useState(null);
+  // Vue affichée après génération : "reponses" par défaut, bascule possible
+  // sans appel réseau une fois l'analyse prête.
+  const [activeView, setActiveView] = useState("reponses");
+
+  const DIMENSION_LABELS = {
+    objectif: "Objectif",
+    contexte: "Contexte",
+    contraintes: "Contraintes",
+  };
+
+  const PALIER_LABELS = {
+    absent: "Absent",
+    "a-clarifier": "À clarifier",
+    clair: "Clair",
+    "tres-clair": "Très clair",
+  };
+
+  const PALIER_PILL_CLASSES = {
+    absent: "bg-foreground/10 text-foreground/60",
+    "a-clarifier": "bg-accent/15 text-accent",
+    clair: "bg-primary/15 text-primary",
+    "tres-clair": "bg-primary/30 text-primary",
+  };
 
   const shouldFocusNewRow = useRef(false);
   const criterionInputRefs = useRef([]);
@@ -119,6 +146,9 @@ export default function Home() {
     setGenerationError(null);
     setRuns([]);
     setScoreResults([]);
+    setDimensions(null);
+    setAnalysisError(null);
+    setActiveView("reponses");
 
     const n = runCount;
     setTotalRuns(n);
@@ -175,6 +205,29 @@ export default function Home() {
     }
 
     setScoreResults(results);
+
+    // Phase 4 (Story 2.1) : analyse par dimensions, déclenchée automatiquement
+    // dès que la notation (phase 3) se termine avec succès — jamais au clic
+    // sur la bascule Réponses/Analyse. Contexte neuf (AD-3) : seul le prompt
+    // est envoyé, scoreResults n'est ni envoyé ni utilisé dans cette story.
+    const { ok: analysisOk, data: analysisData } = await callApi(
+      "/api/analyze-dimensions",
+      { prompt }
+    );
+
+    if (!analysisOk || !Array.isArray(analysisData?.dimensions)) {
+      const reason =
+        analysisData?.error ?? "Erreur inattendue lors de l'analyse du prompt.";
+      // Un échec de l'analyse abandonne tout le flux, comme un échec des
+      // phases précédentes (y compris les réponses déjà affichées).
+      setAnalysisError(`Échec de l'analyse du prompt : ${reason}`);
+      setRuns([]);
+      setScoreResults([]);
+      setIsGenerating(false);
+      return;
+    }
+
+    setDimensions(analysisData.dimensions);
     setIsGenerating(false);
   }
 
@@ -190,6 +243,9 @@ export default function Home() {
     setTotalRuns(0);
     setGenerationError(null);
     setScoreResults([]);
+    setDimensions(null);
+    setAnalysisError(null);
+    setActiveView("reponses");
   }
 
   return (
@@ -368,14 +424,26 @@ export default function Home() {
                     exécution {runs.length + 1}/{totalRuns}
                   </p>
                 )}
-                {isGenerating && runs.length >= totalRuns && (
-                  <p
-                    aria-live="polite"
-                    className="font-mono text-xs text-foreground/60"
-                  >
-                    notation des réponses en cours…
-                  </p>
-                )}
+                {isGenerating &&
+                  runs.length >= totalRuns &&
+                  scoreResults.length === 0 && (
+                    <p
+                      aria-live="polite"
+                      className="font-mono text-xs text-foreground/60"
+                    >
+                      notation des réponses en cours…
+                    </p>
+                  )}
+                {isGenerating &&
+                  scoreResults.length > 0 &&
+                  !dimensions && (
+                    <p
+                      aria-live="polite"
+                      className="font-mono text-xs text-foreground/60"
+                    >
+                      analyse du prompt en cours…
+                    </p>
+                  )}
                 {!isGenerating && !generationError && runs.length > 0 && (
                   <p
                     aria-live="polite"
@@ -418,40 +486,114 @@ export default function Home() {
           </div>
         )}
 
-        {isConfirmed && !generationError && runs.length > 0 && (
-          <section
-            aria-labelledby="runs-heading"
-            className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
+        {analysisError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-primary"
           >
-            <div className="flex items-center justify-between gap-4">
-              <h2
-                id="runs-heading"
-                className="font-display text-2xl font-semibold tracking-tight text-foreground"
-              >
-                Réponses générées
-              </h2>
-              <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
-                {runs.length}/{totalRuns}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {runs.map((output, index) => (
-                <div
-                  key={index}
-                  className="rounded-xl border border-border p-4"
-                >
-                  <p className="mb-2 font-mono text-xs font-medium text-foreground/50">
-                    Exécution {index + 1}
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-foreground">
-                    {output}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
+            {analysisError}
+          </div>
         )}
+
+        {isConfirmed &&
+          !generationError &&
+          !analysisError &&
+          runs.length > 0 && (
+            <>
+              {dimensions && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveView((view) =>
+                        view === "reponses" ? "analyse" : "reponses"
+                      )
+                    }
+                    className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    {activeView === "reponses"
+                      ? "Voir l'analyse"
+                      : "Voir les réponses"}
+                  </button>
+                </div>
+              )}
+
+              {activeView === "reponses" && (
+                <section
+                  aria-labelledby="runs-heading"
+                  className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <h2
+                      id="runs-heading"
+                      className="font-display text-2xl font-semibold tracking-tight text-foreground"
+                    >
+                      Réponses générées
+                    </h2>
+                    <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                      {runs.length}/{totalRuns}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {runs.map((output, index) => (
+                      <div
+                        key={index}
+                        className="rounded-xl border border-border p-4"
+                      >
+                        <p className="mb-2 font-mono text-xs font-medium text-foreground/50">
+                          Exécution {index + 1}
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm text-foreground">
+                          {output}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {activeView === "analyse" && dimensions && (
+                <section
+                  aria-labelledby="dimensions-heading"
+                  className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
+                >
+                  <h2
+                    id="dimensions-heading"
+                    className="font-display text-2xl font-semibold tracking-tight text-foreground"
+                  >
+                    Analyse par dimensions
+                  </h2>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {dimensions.map((dimension) => (
+                      <div
+                        key={dimension.name}
+                        className="rounded-xl border border-border bg-background p-4"
+                      >
+                        <p className="mb-2 font-display text-sm font-medium text-foreground">
+                          {DIMENSION_LABELS[dimension.name] ?? dimension.name}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-lg text-foreground">
+                            {dimension.note} / 10
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              PALIER_PILL_CLASSES[dimension.palier] ??
+                              "bg-foreground/10 text-foreground/60"
+                            }`}
+                          >
+                            {PALIER_LABELS[dimension.palier] ?? dimension.palier}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
       </main>
     </div>
   );
