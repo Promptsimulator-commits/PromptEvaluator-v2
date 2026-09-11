@@ -7,6 +7,14 @@ const MIN_RUNS = 1;
 const MAX_RUNS = 10;
 const DEFAULT_RUNS = 5;
 
+// Notation française à la virgule, arrondie à 1 décimale (repris de la V1).
+function formatScore(score) {
+  return score.toLocaleString("fr-FR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
 // Renvoie toujours la même forme, que l'appel ait échoué côté serveur
 // (HTTP 500 + { error }) ou côté réseau (fetch qui lève), pour que l'appelant
 // traite l'échec de la même manière dans les deux cas.
@@ -585,6 +593,21 @@ export default function Home() {
                   >
                     Analyse par dimensions
                   </h2>
+
+                  <div className="flex flex-col items-center gap-1 text-center">
+                    <span className="text-xs font-semibold tracking-widest text-primary uppercase">
+                      Note globale
+                    </span>
+                    <span className="font-display text-5xl font-semibold text-foreground">
+                      {formatScore(
+                        dimensions.reduce(
+                          (sum, dimension) => sum + dimension.note,
+                          0
+                        ) / dimensions.length
+                      )}
+                      <span className="text-2xl text-foreground/40"> / 10</span>
+                    </span>
+                  </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     {dimensions.map((dimension) => {
