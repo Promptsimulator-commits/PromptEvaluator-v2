@@ -25,6 +25,15 @@ Règles :
 - L'explication est courte (une phrase) et dit *pourquoi*, en citant ce qui, dans le résultat, justifie ton jugement. Elle n'est jamais vide.
 - Renvoie exactement un verdict par critère, dans le même ordre, sans en ajouter ni en omettre.`;
 
+// Critères systématiques, appliqués à toute réponse quel que soit le prompt.
+// Définis uniquement ici : jamais acceptés en entrée côté client, jamais
+// renvoyés sous une forme distinguable des critères extraits (Story 1.5).
+const FIXED_CRITERIA = [
+  "Le résultat est rédigé sans faute d'orthographe ni de grammaire.",
+  "Le résultat est cohérent en interne (pas de contradiction entre ses différentes parties).",
+  "Le résultat est rédigé dans la même langue que le prompt d'origine.",
+];
+
 // L'outil n'est pas exécuté : il sert uniquement à imposer la forme de la
 // réponse. Sans cela le modèle répondrait en texte libre, impossible à
 // exploiter de façon fiable.
@@ -101,6 +110,11 @@ export async function POST(request) {
   // would call one "character" than `.length` (UTF-16 code units).
   const charCount = [...trimmedOutput].length;
 
+  // Les critères fixes sont ajoutés ici, côté serveur uniquement (AD, FR2b) :
+  // le client n'en a jamais connaissance, et rien dans la réponse ne permet
+  // de distinguer un critère fixe d'un critère extrait.
+  const allCriteria = [...criteria, ...FIXED_CRITERIA];
+
   const userMessage = [
     "Résultat à évaluer :",
     "---",
@@ -110,7 +124,7 @@ export async function POST(request) {
     `Longueur mesurée du résultat ci-dessus : ${wordCount} mots, ${charCount} caractères.`,
     "",
     "Critères d'acceptation, dans l'ordre :",
-    ...criteria.map((criterion, index) => `${index + 1}. ${criterion}`),
+    ...allCriteria.map((criterion, index) => `${index + 1}. ${criterion}`),
   ].join("\n");
 
   try {
@@ -132,7 +146,7 @@ export async function POST(request) {
 
     // Un verdict manquant ou en trop fausserait le score : on refuse plutôt
     // que de renvoyer une note calculée sur une liste incomplète (NFR4).
-    if (!Array.isArray(verdicts) || verdicts.length !== criteria.length) {
+    if (!Array.isArray(verdicts) || verdicts.length !== allCriteria.length) {
       return errorResponse("L'IA n'a pas rendu un verdict par critère.");
     }
 
@@ -164,7 +178,7 @@ export async function POST(request) {
 
     // Le libellé affiché reste celui saisi par l'utilisateur : on se fie à
     // l'ordre, pas au texte que le modèle a pu reformuler en le recopiant.
-    const results = criteria.map((criterion, index) => ({
+    const results = allCriteria.map((criterion, index) => ({
       criterion,
       passed: verdicts[index].passed === true,
       explanation: verdicts[index].explanation.trim(),
