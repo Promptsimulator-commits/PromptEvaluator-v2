@@ -1,53 +1,64 @@
-# Epic 1 Context: Évaluer un prompt par exécutions multiples
+# Epic 1 Context: Envoyer un prompt — extraction des critères et génération de N réponses
 
 <!-- Compiled from planning artifacts. Edit freely. Regenerate with compile-epic-context if planning docs change. -->
 
 ## Goal
 
-This epic delivers the core evaluation loop of the Prompt Evaluator POC: a user enters a prompt and a set of free-text acceptance criteria, chooses how many times to run it (N, a 1-10 slider defaulting to 5 — FR3b), triggers N independent executions of that prompt, has each execution scored against the criteria, and sees a reliable final score (average + per-execution detail + per-criterion stability). It also covers standing up the project itself (repo, Next.js scaffold, Vercel deployment) as its first story. This epic matters because it is the entire evidence base the demo depends on: a working, bug-free, end-to-end evaluation flow is the primary success criterion for the go/no-go decision from the sponsor. Getting the measurement itself right (true independence between runs, no partial/misleading averages) is what makes the resulting score trustworthy.
-
-**Current status (2026-09-08):** Stories 1.1 to 1.4 are done. The repo is at github.com/swoodpartners/PromptEvaluator (migrated from an initial personal repo) and the app is deployed at https://prompt-evaluator-pi.vercel.app/. The Anthropic API key is provisioned — locally in `.env.local` and as a Vercel environment variable — so nothing is blocked. Deployment is manual via the Vercel CLI: a `git push` does **not** redeploy the site, because the GitHub org connection is unresolved. Story 1.5 is next.
+L'utilisateur saisit un prompt et clique sur un unique bouton "Envoyer" qui déclenche tout le flux : une IA extrait automatiquement les exigences vérifiables du texte (plus de critères tapés à la main), l'utilisateur relit et ajuste cette liste avant de confirmer, puis le prompt est exécuté N fois de façon indépendante et les réponses générées s'affichent en texte brut. Chaque réponse est aussi notée en arrière-plan (jamais affiché individuellement) pour alimenter la mesure de divergence utilisée par l'Épic 2. Cet épic remplace l'ancien Épic 1 "critères manuels" issu de la mécanique V1, retirée lors du pivot du 2026-09-11 ; il porte l'essentiel de la valeur du POC (autonomie de l'extraction, sécurité de la clé API, fiabilité du flux) et inclut la Story 1.1 (infrastructure), déjà faite avant le pivot et inchangée.
 
 ## Stories
 
-- Story 1.1: Initialize and deploy the project (repo, Next.js scaffold, Vercel) — DONE
-- Story 1.2: Enter a prompt and its acceptance criteria — DONE
-- Story 1.3: Execute the prompt N times securely (`/api/execute`) — DONE
-- Story 1.4: Score each result against the criteria (`/api/score`) — DONE
-- Story 1.5: View the average score and per-criterion stability — NEXT
+- Story 1.1: Initialiser et déployer le projet (déjà faite, inchangée par le pivot)
+- Story 1.2: Saisir un prompt et lancer l'extraction automatique de critères
+- Story 1.3: Réviser et valider la liste de critères extraits
+- Story 1.4: Générer N réponses de façon sécurisée
+- Story 1.5: Noter chaque réponse en arrière-plan pour mesurer la divergence
 
 ## Requirements & Constraints
 
-- A prompt (free text) and acceptance criteria (free text, one per line) are the only inputs; at least 1 non-empty criterion is required before an evaluation can be launched, blank lines are ignored, and duplicate criteria are de-duplicated (first occurrence wins) so one criterion cannot weigh twice in the score.
-- N (the number of executions) is chosen by the user on a 1-10 slider, default 5 (FR3b), and is frozen at launch — moving the slider mid-run does not change the evaluation in progress.
-- The prompt runs N times against the Anthropic API (Claude Haiku), each run in a completely fresh, independent context — no shared conversation history between runs.
-- Each of the N outputs is scored by a separate API call (also a fresh context) that judges every criterion as passed/not-passed with an explanation.
-- Per-execution score = (criteria passed / total criteria) × 10. Final score = average of the N execution scores.
-- The user must see: the overall average, each of the N individual execution scores, and, per criterion, how many times (out of N) it was validated.
-- Measurement integrity is a hard constraint: if any single execution or scoring call fails, the entire evaluation is discarded and a clear error is shown — never compute or present an average over a partial set of results.
-- The Anthropic API key must never be exposed to the client; all LLM calls happen only from server-side code. The key is provisioned both locally and on Vercel, so the flow can be exercised end to end.
-- Cost scales as 2N Anthropic calls per evaluation (N executions + N scorings) — 20 calls at N = 10. Worth keeping in view against the ~€10-20 envelope as Epic 2 adds `/api/analyze`.
-- Budget/reliability targets (cross-cutting, not owned by this epic specifically): keep total API spend in the ~€10-20 range for the whole POC, and the app must run without bugs during the sponsor demo.
-- No login/auth, no database, no persistence between sessions — out of scope for this POC.
-- No formal UX spec exists; the only steer is that the interface should feel simple and playful (P1, nice-to-have), with no fixed visual identity required.
+- Un seul bouton d'action ("Envoyer") lance tout le flux ; il n'y a plus de champ "critères" saisi manuellement.
+- L'extraction des critères se fait via un appel API séparé, dans un contexte neuf (pas d'historique de conversation).
+- Les critères extraits sont présentés dans une liste éditable (ajout, suppression, édition en place) avant tout lancement de génération ; l'utilisateur confirme ("Confirmer et lancer") ou annule ("Annuler", retour à l'état initial, prompt non modifié).
+- 3 critères de base (orthographe/grammaire, cohérence interne, même langue que le prompt) sont toujours appliqués en plus des critères extraits, mais ne sont jamais saisis, ni affichés, ni éditables, ni transmis au client sous quelque forme que ce soit.
+- N (nombre d'exécutions) est choisi par un curseur 1-10, défaut 5, figé au moment du lancement ; désactivé pendant la génération.
+- Chaque exécution et chaque notation se fait dans un contexte neuf et indépendant — aucun état conversationnel partagé entre appels.
+- Les réponses générées s'affichent en texte brut au fur et à mesure, sans score ni tableau de conformité par réponse.
+- La notation par critère de chaque réponse (fixe + extrait) n'est jamais affichée dans l'UI ; elle sert uniquement à calculer la divergence consommée par l'Épic 2 (notation par dimension).
+- Si un seul appel échoue à n'importe quelle étape (extraction, une des N exécutions, une des N notations), tout le flux est abandonné et une erreur claire est affichée — jamais de résultat partiel présenté comme final.
+- La clé API Anthropic n'est jamais exposée côté client ; tout appel LLM passe par une route serverless Next.js.
+- Budget API indicatif ~10-20€ pour l'ensemble du POC ; l'appel d'extraction ajoute un appel léger par envoi, sans changer l'ordre de grandeur.
+- L'application doit fonctionner sans bug lors de la démo (critère de succès du POC).
 
 ## Technical Decisions
 
-- Single Next.js 16.3 (App Router) project, Node.js ≥ 20.9, Tailwind CSS 4.3.3, `@anthropic-ai/sdk` 0.123.0, Claude Haiku model, hosted on Vercel — already scaffolded and deployed (repo + Vercel project exist).
-- Strict client/server split: `app/` holds client UI with no direct LLM calls; only `app/api/*/route.ts` Route Handlers may import/instantiate `@anthropic-ai/sdk` and read `ANTHROPIC_API_KEY` via `process.env` (never `NEXT_PUBLIC_`-prefixed, never passed to the client).
-- Fixed API contract (must match exactly; all three routes share this shape even though only two belong to this epic):
-  - `POST /api/execute`: `{ prompt: string }` → `{ output: string }`
-  - `POST /api/score`: `{ output: string, criteria: string[] }` → `{ results: { criterion: string, passed: boolean, explanation: string }[] }`
-  - Uniform error shape on every route: `{ error: string }` + HTTP 500 — never a route-specific error format.
-- Each call to `/api/execute` and `/api/score` sends a single message to the Anthropic API with no attached conversation history — one call, one fresh context, no server-side conversational state retained between calls.
-- The N-run loop is orchestrated client-side in `app/page.js` (the project is plain JavaScript, not TypeScript — the architecture spine's `.ts`/`.tsx` filenames are stale), not by an aggregating server route. It runs as two successive phases: all N executions, then all N scorings. On any single failure at any step, abandon the whole evaluation and surface the error — never average a subset.
-- Shared server-side Anthropic concerns (model id, token ceiling, error mapping, `{ error }` + 500 shape) live in `lib/anthropic.js`; the routes import them rather than each keeping a copy.
-- All application state (prompt, criteria, execution results, scores) lives only in React state (`useState`/`useReducer`) in client components. No disk writes, no browser storage, no database.
-- Naming: API routes are kebab-case under `app/api/<verb>/route.ts` (`execute`, `score`); React components are PascalCase. One Anthropic call per route — no hidden fan-out.
-- Single deployment environment (Vercel, no staging); `ANTHROPIC_API_KEY` is set as a Vercel env var and in local `.env.local` (git-ignored, never committed) — this key is currently missing pending budget approval.
+- Architecture client/serveur en un seul projet Next.js App Router : `app/` = composants client (aucun appel LLM direct) ; `app/api/*/route.ts` = seule couche autorisée à appeler l'API Anthropic via `@anthropic-ai/sdk`, `ANTHROPIC_API_KEY` lu uniquement via `process.env` côté serveur.
+- Routes concernées par cet épic :
+  - `POST /api/extract-criteria` (nouvelle) : `{ prompt }` → `{ criteria: string[] }` — n'extrait que les exigences vérifiables du texte, ne renvoie jamais les 3 critères fixes.
+  - `POST /api/execute` : `{ prompt }` → `{ output }` (inchangée).
+  - `POST /api/score` : `{ output, criteria[] }` → `{ results: [{criterion, passed, explanation}] }` — les 3 critères fixes sont une constante définie uniquement côté serveur dans cette route (ou un module serveur importé par elle), concaténés aux critères reçus avant l'appel Anthropic ; jamais acceptés en entrée, jamais distingués dans la réponse.
+  - Erreurs uniformes sur toutes les routes : `{ error }` + HTTP 500.
+- Orchestration du flux entièrement côté client (`app/page.tsx`), pas de route serveur agrégatrice, en phases séquentielles : (1) extraction → attente de validation utilisateur, (2) N appels `/api/execute`, (3) N appels `/api/score` (tous les N exécutions doivent être produites avant que la notation ne commence — pas d'entrelacement). La phase suivante de l'épic 2 (analyse par dimension) démarre automatiquement dès la fin de la phase 3.
+- Chaque appel Anthropic (extraction, exécution, notation) est un message unique sans historique joint — un appel = un contexte neuf ; aucun état conversationnel conservé côté serveur entre deux appels.
+- État applicatif 100% client, en mémoire (`useState`/`useReducer`) ; aucune persistance, aucun `localStorage`, aucune base de données.
+- Conventions : routes API en kebab-case sous `app/api/<verbe>/route.ts` ; composants React en PascalCase ; JSON uniquement en entrée/sortie ; couleurs via tokens CSS (`app/globals.css`), jamais en dur.
+- Stack figée : Next.js 16.3, Node.js ≥ 20.9, Tailwind CSS 4.3.3, `@anthropic-ai/sdk` 0.123.0, modèle Claude Haiku, hébergement Vercel (déploiement manuel via `vercel --prod`, pas de connexion GitHub↔Vercel automatique, pas de staging).
+
+## UX & Interaction Patterns
+
+- Écran unique, une seule colonne `<main>`, pas de routing ; chaque "surface" (saisie, revue des critères, réponses) est la même colonne qui se redessine en place.
+- Bouton "Envoyer" : désactivé tant que le champ prompt est vide ; au clic, lance l'extraction (état de chargement `aria-live="polite"`, "extraction des critères…"), puis ouvre la liste de critères inline sous le prompt — ne génère rien tant que la liste n'est pas confirmée.
+- Liste de critères extraits : une seule liste, sans regroupement visuel (les critères fixes n'apparaissent jamais) ; chaque ligne éditable en place, supprimable ; affordance "+ Ajouter un critère" ; un chip mono-espacé accent affiche le compte, mis à jour en direct ("0 critère" au singulier, pluriel sinon).
+- "Confirmer et lancer" (style secondaire outlined) : désactivé si la liste est vide ; démarre la génération avec la liste (possiblement éditée).
+- "Annuler" (style ghost/texte, contrôle le plus discret) : referme la liste, retour à l'état de saisie initial, prompt non modifié, aucune génération lancée.
+- Curseur N (1-10, défaut 5) : toujours accompagné d'un texte d'aide visible en permanence (jamais un tooltip) expliquant le compromis précision/coût ; message explicite spécifique à N=1 ("tu verras un résultat, mais pas la stabilité du prompt").
+- Pendant la génération : `aria-live="polite"` progressif ("exécution 2/5", puis "notation des dimensions…") ; curseur désactivé.
+- En cas d'échec : panneau `role="alert"` avec message précis (quel appel a échoué, à quelle étape).
+- Vue "Réponses générées" (texte brut, sans score par réponse) : vue par défaut une fois les résultats prêts.
+- Contrôles désactivés : état visuel + attribut natif `disabled` ; focus visible en permanence sur tous les éléments interactifs.
 
 ## Cross-Story Dependencies
 
-- Stories 1.1 to 1.4 are complete and nothing is blocked; the `ANTHROPIC_API_KEY` is provisioned.
-- Story 1.5 (average + stability display) is the last of this epic. Its data is already produced by Story 1.4: each run carries `results: [{criterion, passed, explanation}]` plus a `score`, with `criterion` guaranteed to be the exact string the user typed (the route re-associates verdicts by position and never echoes the model's paraphrase) — that exact-label guarantee is what makes per-criterion grouping across runs possible.
-- Epic 2 (prompt analysis) is independent of this epic's UI flow but, when evaluation results already exist from this epic, Epic 2 consumes them (per-criterion pass/fail data) to surface "unstable" criteria — **validated between 1 and N−1 times out of N** (FR10), not the old fixed "1-4 out of 5". At N = 1 no criterion can be unstable. The data shape produced by Story 1.4/1.5 must remain stable for Epic 2 to build on.
+- Story 1.3 dépend du résultat de l'extraction (Story 1.2) et doit produire la liste (possiblement éditée) que consomment les Stories 1.4 et 1.5.
+- Story 1.4 (N exécutions) doit être terminée pour toutes les réponses avant que la Story 1.5 (notation en arrière-plan) ne commence — pas d'entrelacement exécution/notation.
+- La sortie de la Story 1.5 (résultats de notation par réponse, non affichés) est un intrant direct de l'Épic 2 (notation par dimension et correction comportementale) : sans elle, les dimensions Objectif/Contexte/Contraintes ne peuvent pas être corrigées par divergence.
+- Story 1.1 est un prérequis d'infrastructure pour toutes les autres stories de l'épic mais ne nécessite aucun travail supplémentaire.

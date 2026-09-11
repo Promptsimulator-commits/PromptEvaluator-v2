@@ -42,6 +42,20 @@
 
 ## Deferred from: code review of fix-score-length-precision (2026-09-08)
 
+## Deferred from: code review of story 1.2, mécanique V2 (2026-09-11)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-declencher-extraction-criteres.md`
+  summary: `/api/extract-criteria` does not check `message.stop_reason === "max_tokens"` before accepting the tool-use response, so a mid-generation truncation could yield an incomplete `criteria` array.
+  evidence: Confirmed absent by both the Blind Hunter and Edge Case Hunter reviewers. Shared blind spot with `/api/execute` and `/api/score` (untouched by this diff) — pre-existing project pattern, not a regression introduced here. `MAX_TOKENS` (4096) is generous for a short criteria list, making this low-likelihood in practice.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-declencher-extraction-criteres.md`
+  summary: `/api/extract-criteria` has no max-length guard on `prompt` before the Anthropic call (only emptiness is checked).
+  evidence: Same pre-existing gap already logged against `/api/execute`/`/api/score`/`/api/analyze` above — no length limit has been decided anywhere yet (NFR2 budget). Confirmed identical pattern, not unique to this story.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-declencher-extraction-criteres.md`
+  summary: The I/O matrix's "Réponse IA vide/mal formée" row was verified by code reading (the guard is present and correct) but never actually triggered against a live malformed Anthropic response during manual testing — unlike the network-failure row, which was exercised via a patched `fetch`.
+  evidence: Flagged by the Verification Gap reviewer. Inherent limitation of this POC's no-automated-test approach (`TESTING-v2.md`) rather than a code defect — forcing the real API to return a malformed tool-use block isn't something manual browser testing can reliably do without mocking the SDK, which the project has explicitly ruled out.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-score-length-precision.md`
   summary: `/api/score`'s word-count computation (`output.trim().split(/\s+/)`) is inaccurate for non-whitespace-delimited scripts (e.g. Japanese, Chinese) — it would return something like "1 word" for a full paragraph, and the judge is explicitly told to trust this measured count over its own reading impression.
   evidence: Real and verified — the whitespace-split approach cannot segment words in scripts without spaces. Deferred rather than fixed: confirmed with the user that this tool's users are francophone/anglophone consultants only, so non-whitespace-delimited output is out of scope for this POC. Revisit only if the tool's user base changes.
