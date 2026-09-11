@@ -42,6 +42,12 @@
 
 ## Deferred from: code review of fix-score-length-precision (2026-09-08)
 
+## Deferred from: code review of story 2.2, mécanique V2 (2026-09-11)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-2-correction-comportementale.md`
+  summary: `/api/analyze-dimensions`'s divergence judgment call has no cap on the total length of the N concatenated `responses` before the Anthropic call.
+  evidence: Confirmed by the Edge Case Hunter reviewer. Same pre-existing pattern already logged multiple times above (no length limit decided anywhere in the app yet, NFR2 budget) — not unique to this story, worse here only because N responses are concatenated instead of one prompt.
+
 ## Deferred from: code review of story 2.1, mécanique V2 (2026-09-11)
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-1-noter-dimensions-signal-textuel.md`
