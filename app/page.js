@@ -41,6 +41,9 @@ export default function Home() {
   const [runs, setRuns] = useState([]);
   const [totalRuns, setTotalRuns] = useState(0);
   const [generationError, setGenerationError] = useState(null);
+  // Notation en arrière-plan des réponses générées (Story 1.5). Jamais rendu
+  // dans le JSX — sert uniquement l'Épic 2 (notation par dimension) à venir.
+  const [scoreResults, setScoreResults] = useState([]);
 
   const shouldFocusNewRow = useRef(false);
   const criterionInputRefs = useRef([]);
@@ -53,7 +56,7 @@ export default function Home() {
     }
   }, [criteriaList]);
 
-  const canSend = prompt.trim().length > 0 && !isExtracting;
+  const canSend = prompt.trim().length > 0 && !isExtracting && !isGenerating;
 
   // Contexte neuf à chaque appel (AD-3) : aucun historique n'est envoyé, la
   // route /api/extract-criteria ne connaît que le prompt de cet appel.
@@ -115,10 +118,16 @@ export default function Home() {
     setIsConfirmed(true);
     setGenerationError(null);
     setRuns([]);
+    setScoreResults([]);
 
     const n = runCount;
     setTotalRuns(n);
     setIsGenerating(true);
+
+    // Copie locale des réponses générées : l'état `runs` se met à jour de
+    // façon asynchrone, alors que la boucle de notation ci-dessous a besoin
+    // de la valeur exacte dès que la génération se termine.
+    const generatedRuns = [];
 
     for (let i = 0; i < n; i++) {
       // Contexte neuf à chaque appel (AD-3) : pas d'historique partagé entre
@@ -136,9 +145,36 @@ export default function Home() {
         return;
       }
 
+      generatedRuns.push(data.output);
       setRuns((prev) => [...prev, data.output]);
     }
 
+    // Notation en arrière-plan (Story 1.5) : ne démarre qu'une fois les N
+    // réponses générées avec succès, jamais entrelacée avec la génération
+    // (AD-4). Chaque appel repart d'un contexte neuf (AD-3, FR4). Le résultat
+    // n'est jamais affiché — il ne sert que l'Épic 2 à venir.
+    const results = [];
+
+    for (let i = 0; i < n; i++) {
+      const { ok, data } = await callApi("/api/score", {
+        output: generatedRuns[i],
+        criteria: criteriaList,
+      });
+
+      if (!ok || !Array.isArray(data?.results)) {
+        const reason =
+          data?.error ?? "Erreur inattendue lors de la notation par l'IA.";
+        setGenerationError(`Échec de la notation ${i + 1}/${n} : ${reason}`);
+        setRuns([]);
+        setScoreResults([]);
+        setIsGenerating(false);
+        return;
+      }
+
+      results.push(data.results);
+    }
+
+    setScoreResults(results);
     setIsGenerating(false);
   }
 
@@ -153,6 +189,7 @@ export default function Home() {
     setRuns([]);
     setTotalRuns(0);
     setGenerationError(null);
+    setScoreResults([]);
   }
 
   return (
@@ -323,12 +360,20 @@ export default function Home() {
 
             {isConfirmed ? (
               <>
-                {isGenerating && (
+                {isGenerating && runs.length < totalRuns && (
                   <p
                     aria-live="polite"
                     className="font-mono text-xs text-foreground/60"
                   >
                     exécution {runs.length + 1}/{totalRuns}
+                  </p>
+                )}
+                {isGenerating && runs.length >= totalRuns && (
+                  <p
+                    aria-live="polite"
+                    className="font-mono text-xs text-foreground/60"
+                  >
+                    notation des réponses en cours…
                   </p>
                 )}
                 {!isGenerating && !generationError && runs.length > 0 && (
