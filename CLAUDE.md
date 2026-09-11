@@ -1,6 +1,6 @@
 # Prompt Evaluator — Instructions de travail
 
-> 🚧 **Version 2 — en développement.** Nouvelle mécanique de notation par 4 dimensions (Objectif/Contexte/Exemples/Contraintes, signal textuel + signal comportemental), sans critères d'acceptance saisis à la main. La V1 (mécanique actuelle : critères manuels + note par conformité) reste en ligne, figée, dans [`PromptEvaluator`](https://github.com/swoodpartners/PromptEvaluator).
+> 🚧 **Version 2 — en développement.** Nouvelle mécanique : au clic sur "Envoyer", les critères sont extraits automatiquement du prompt (plus de saisie manuelle), puis le prompt est noté sur 3 dimensions (Objectif/Contexte/Contraintes, signal textuel + correction comportementale). Plus de bouton "Analyser" séparé. Détail complet dans `_bmad-output/planning-artifacts/` (PRD, epics, architecture, UX) et le journal `_bmad-output/implementation-artifacts/session-log-2026-09-11-v2-design.md`. La V1 (mécanique précédente : critères manuels + note par conformité, 4 dimensions) reste en ligne, figée, dans [`PromptEvaluator`](https://github.com/swoodpartners/PromptEvaluator).
 
 ## Comment travailler avec moi
 
