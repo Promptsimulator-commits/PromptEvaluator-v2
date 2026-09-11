@@ -42,6 +42,12 @@
 
 ## Deferred from: code review of fix-score-length-precision (2026-09-08)
 
+## Deferred from: code review of story 1.3, mécanique V2 (2026-09-11)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-reviser-valider-criteres.md`
+  summary: The editable criteria rows in `app/page.js` use array `index` as the React key; deleting a row can drop keyboard focus from a row being edited further down the list (the focused DOM node is unmounted rather than reused).
+  evidence: Confirmed by the Edge Case Hunter reviewer and verified by reading the code — no stable per-row id exists, only the array index. The displayed value stays correct (controlled input), only focus is lost. Low real-world impact for this single-user POC tool; the clean fix (switch `criteriaList` from `string[]` to `{id, text}[]` with a generated id per row) touches every handler (`handleEditCriterion`, `handleRemoveCriterion`, `handleAddCriterion`, `handleConfirm`) — more than a direct correction, deferred rather than patched to keep this story's diff small.
+
 ## Deferred from: code review of story 1.2, mécanique V2 (2026-09-11)
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-declencher-extraction-criteres.md`

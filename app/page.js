@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 const MIN_RUNS = 1;
@@ -30,6 +30,23 @@ export default function Home() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState(null);
   const [extractedCriteria, setExtractedCriteria] = useState(null);
+  // Copie modifiable de extractedCriteria (référence distincte) : l'édition
+  // en place, l'ajout et la suppression de lignes ne touchent que cet état.
+  const [criteriaList, setCriteriaList] = useState([]);
+  // true une fois "Confirmer et lancer" cliqué : la liste devient lecture
+  // seule jusqu'au prochain "Envoyer" (nouvelle extraction).
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
+  const shouldFocusNewRow = useRef(false);
+  const criterionInputRefs = useRef([]);
+
+  useEffect(() => {
+    if (shouldFocusNewRow.current) {
+      shouldFocusNewRow.current = false;
+      const lastInput = criterionInputRefs.current[criteriaList.length - 1];
+      lastInput?.focus();
+    }
+  }, [criteriaList]);
 
   const canSend = prompt.trim().length > 0 && !isExtracting;
 
@@ -42,6 +59,8 @@ export default function Home() {
     setIsExtracting(true);
     setExtractionError(null);
     setExtractedCriteria(null);
+    setCriteriaList([]);
+    setIsConfirmed(false);
 
     const { ok, data } = await callApi("/api/extract-criteria", { prompt });
 
@@ -54,7 +73,41 @@ export default function Home() {
     }
 
     setExtractedCriteria(data.criteria);
+    setCriteriaList([...data.criteria]);
     setIsExtracting(false);
+  }
+
+  function handleEditCriterion(index, value) {
+    setCriteriaList((list) =>
+      list.map((criterion, i) => (i === index ? value : criterion))
+    );
+  }
+
+  function handleRemoveCriterion(index) {
+    setCriteriaList((list) => list.filter((_, i) => i !== index));
+  }
+
+  function handleAddCriterion() {
+    shouldFocusNewRow.current = true;
+    setCriteriaList((list) => [...list, ""]);
+  }
+
+  const hasBlankCriterion = criteriaList.some(
+    (criterion) => criterion.trim().length === 0
+  );
+
+  function handleConfirm() {
+    if (criteriaList.length === 0 || hasBlankCriterion) return;
+    setIsConfirmed(true);
+  }
+
+  // Referme la liste et restaure l'état de saisie initial : le prompt reste
+  // inchangé, aucune requête réseau n'est déclenchée.
+  function handleCancel() {
+    setExtractedCriteria(null);
+    setCriteriaList([]);
+    setIsConfirmed(false);
+    setExtractionError(null);
   }
 
   return (
@@ -168,19 +221,87 @@ export default function Home() {
             aria-labelledby="criteria-heading"
             className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
           >
-            <h2
-              id="criteria-heading"
-              className="font-display text-2xl font-semibold tracking-tight text-foreground"
-            >
-              Critères extraits
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {extractedCriteria.map((criterion, index) => (
-                <li key={index} className="text-sm text-foreground">
-                  {criterion}
-                </li>
+            <div className="flex items-center justify-between gap-4">
+              <h2
+                id="criteria-heading"
+                className="font-display text-2xl font-semibold tracking-tight text-foreground"
+              >
+                Critères extraits
+              </h2>
+              <span className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-xs font-medium text-accent">
+                {criteriaList.length} critère
+                {criteriaList.length > 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {criteriaList.map((criterion, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 rounded-xl border border-border px-3 py-2"
+                >
+                  <input
+                    type="text"
+                    value={criterion}
+                    disabled={isConfirmed}
+                    ref={(el) => {
+                      criterionInputRefs.current[index] = el;
+                    }}
+                    onChange={(e) =>
+                      handleEditCriterion(index, e.target.value)
+                    }
+                    aria-label={`Critère ${index + 1}`}
+                    className="flex-1 border-none bg-transparent text-sm text-foreground outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  />
+                  {!isConfirmed && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCriterion(index)}
+                      aria-label="Supprimer ce critère"
+                      className="text-foreground/40 transition-colors hover:text-primary"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
-            </ul>
+              {!isConfirmed && (
+                <button
+                  type="button"
+                  onClick={handleAddCriterion}
+                  className="rounded-xl border border-dashed border-border px-3 py-2 text-left text-sm text-foreground/60 transition-colors hover:border-primary hover:text-primary"
+                >
+                  + Ajouter un critère
+                </button>
+              )}
+            </div>
+
+            {isConfirmed ? (
+              <p
+                aria-live="polite"
+                className="font-mono text-xs text-foreground/60"
+              >
+                Liste confirmée — prêt pour la génération (à venir).
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={criteriaList.length === 0 || hasBlankCriterion}
+                  className="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:border-foreground/15 disabled:text-foreground/40"
+                >
+                  Confirmer et lancer
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="rounded-full px-4 py-3 text-sm font-semibold text-foreground/70 transition-colors hover:text-primary"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
           </section>
         )}
       </main>
