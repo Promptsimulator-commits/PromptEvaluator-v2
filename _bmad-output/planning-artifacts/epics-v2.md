@@ -1,6 +1,6 @@
 ---
 stepsCompleted: [step-01-validate-prerequisites, step-02-design-epics, step-03-create-stories]
-inputDocuments: ['_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/prd.md', '_bmad-output/planning-artifacts/architecture/architecture-prompt-evaluator-2026-09-04/ARCHITECTURE-SPINE.md']
+inputDocuments: ['_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/prd-v2.md', '_bmad-output/planning-artifacts/architecture/architecture-prompt-evaluator-2026-09-04/ARCHITECTURE-SPINE-v2.md']
 ---
 
 # Prompt Evaluator - Epic Breakdown

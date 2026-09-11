@@ -1,5 +1,7 @@
 # Prompt Evaluator
 
+> 🚧 **Version 2 — in development.** New dimension-based scoring (Objectif/Contexte/Exemples/Contraintes, textual signal + behavioral signal), no manually-entered acceptance criteria. V1 (current mechanics: manual criteria + compliance score) stays live, frozen, in [`PromptEvaluator`](https://github.com/swoodpartners/PromptEvaluator).
+
 POC: a practice tool for the "Prompting Produit" skill. Test a prompt across multiple runs, score it against your own acceptance criteria, and get structured improvement suggestions — before you use it for real.
 
 Status: **work in progress** (3-day POC, pre-demo).
@@ -25,4 +27,4 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Project docs
 
-Full PRD, architecture decisions, and epics/stories live in [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/). Working instructions for whoever develops this project are in [`CLAUDE.md`](CLAUDE.md). Branch/PR/review workflow is in [`CONTRIBUTING.md`](CONTRIBUTING.md), and the testing approach is in [`TESTING.md`](TESTING.md).
+Full PRD, architecture decisions, and epics/stories live in [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/) (`prd-v2.md`, `epics-v2.md`, `ARCHITECTURE-SPINE-v2.md`). These currently still describe V1's mechanics, inherited as the starting point — they'll be rewritten as the new dimension-based scoring is designed. Working instructions for whoever develops this project are in [`CLAUDE.md`](CLAUDE.md). Branch/PR/review workflow is in [`CONTRIBUTING-v2.md`](CONTRIBUTING-v2.md), and the testing approach is in [`TESTING-v2.md`](TESTING-v2.md).

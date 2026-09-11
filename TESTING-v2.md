@@ -4,7 +4,7 @@
 
 ## Le format : Gherkin (Given/When/Then)
 
-Chaque story dans [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md) a déjà ses critères d'acceptance au format **Given/When/Then** (Gherkin) — c'est le format standard de ce projet pour spécifier un comportement attendu, et il ne change pas :
+Chaque story dans [`_bmad-output/planning-artifacts/epics-v2.md`](_bmad-output/planning-artifacts/epics-v2.md) a déjà ses critères d'acceptance au format **Given/When/Then** (Gherkin) — c'est le format standard de ce projet pour spécifier un comportement attendu, et il ne change pas :
 
 ```gherkin
 Given <l'état de départ>
@@ -49,7 +49,7 @@ On utilise le navigateur (outil `Browser`), pas uniquement la lecture du code :
 2. **Cas limites d'entrée** : répéter avec les valeurs extrêmes de la check-list ci-dessus.
 3. **Simuler un échec réseau/API sans dépenser d'appel réel** : intercepter `window.fetch` en JavaScript dans la page pour faire échouer un appel précis (ex. le 3ᵉ sur 5), puis vérifier le message affiché et l'état des boutons.
 4. **Vérifier le réseau** : lister les requêtes réseau et confirmer qu'elles ne vont que vers nos routes internes, jamais vers l'API Anthropic directement.
-5. **Consigner le résultat** dans la description de la PR (section "Plan de test" — voir `CONTRIBUTING.md`), pour qu'il reste une trace de ce qui a été vérifié et non pas seulement "ça marche chez moi".
+5. **Consigner le résultat** dans la description de la PR (section "Plan de test" — voir `CONTRIBUTING-v2.md`), pour qu'il reste une trace de ce qui a été vérifié et non pas seulement "ça marche chez moi".
 
 ## Exemple concret — Story 1.3 (exécuter le prompt N fois)
 

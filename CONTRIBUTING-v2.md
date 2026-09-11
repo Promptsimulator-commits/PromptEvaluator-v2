@@ -2,7 +2,7 @@
 
 Ce document décrit comment une story avance, du premier commit jusqu'à `main`. Objectif : un code propre, une trace claire de ce qui a été vérifié, et aucune surprise en démo (NFR3 du PRD).
 
-Pour le contexte produit (PRD, architecture, epics/stories), voir [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/). Pour l'approche de test, voir [`TESTING.md`](TESTING.md).
+Pour le contexte produit (PRD, architecture, epics/stories), voir [`_bmad-output/planning-artifacts/`](_bmad-output/planning-artifacts/). Pour l'approche de test, voir [`TESTING-v2.md`](TESTING-v2.md).
 
 ## Branches
 
@@ -19,11 +19,11 @@ Pour le contexte produit (PRD, architecture, epics/stories), voir [`_bmad-output
 
 ## Pull Requests
 
-Une PR est ouverte vers `main` une fois la story terminée et auto-vérifiée (voir `TESTING.md`). La description de la PR contient :
+Une PR est ouverte vers `main` une fois la story terminée et auto-vérifiée (voir `TESTING-v2.md`). La description de la PR contient :
 
 1. **Quoi** : ce qui change, en une ou deux phrases.
 2. **Pourquoi** : quelle story / quel besoin ça couvre.
-3. **Plan de test** : les scénarios Gherkin de la story (voir `TESTING.md`) et leur résultat — cochés au fur et à mesure qu'ils ont été vérifiés.
+3. **Plan de test** : les scénarios Gherkin de la story (voir `TESTING-v2.md`) et leur résultat — cochés au fur et à mesure qu'ils ont été vérifiés.
 4. **Écarts connus** : toute limite ou compromis assumé (ex. la limite du critère "instable" à N=1, documentée dans le PRD).
 
 ### Revue de code
@@ -46,8 +46,8 @@ Une fois les remarques du review traitées, la PM relit et approuve elle-même l
 
 Une story est terminée quand :
 
-- [ ] Tous les critères d'acceptance de la story (`epics.md`, format Given/When/Then) sont satisfaits.
-- [ ] Tous les scénarios de test de la story (`TESTING.md` / section de la story) ont été exécutés et sont passés — dans le navigateur réel, pas seulement en lecture de code.
+- [ ] Tous les critères d'acceptance de la story (`epics-v2.md`, format Given/When/Then) sont satisfaits.
+- [ ] Tous les scénarios de test de la story (`TESTING-v2.md` / section de la story) ont été exécutés et sont passés — dans le navigateur réel, pas seulement en lecture de code.
 - [ ] Le lint (`npm run lint`) est propre.
 - [ ] Si la PR contient du code : elle est passée par `/bmad-code-review` et les remarques retenues sont traitées.
 - [ ] La PM a approuvé la fusion vers `main`.

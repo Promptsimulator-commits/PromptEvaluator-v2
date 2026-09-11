@@ -9,7 +9,7 @@ status: final
 created: '2026-09-04'
 updated: '2026-09-04'
 binds: [FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10, FR11]
-sources: ['_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/prd.md', '_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/addendum.md']
+sources: ['_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/prd-v2.md', '_bmad-output/planning-artifacts/prds/prd-prompt-evaluator-2026-09-04/addendum.md']
 companions: []
 ---
 
